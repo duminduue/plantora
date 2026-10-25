@@ -1,0 +1,370 @@
+
+import { useEffect, useState } from 'react'
+import './App.css'
+
+type Plant = {
+  _id: string
+  name: string
+  category: string
+  price: number
+  description: string
+  imageUrl: string
+  sunlight: string
+}
+
+const API_URL = 'http://localhost:5000/api/plants'
+
+function App() {
+  const [plants, setPlants] = useState<Plant[]>([])
+  const [categories, setCategories] = useState<string[]>([])
+  const [search, setSearch] = useState('')
+  const [category, setCategory] = useState('')
+  const [minPrice, setMinPrice] = useState('')
+  const [maxPrice, setMaxPrice] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [reload, setReload] = useState(0)
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    async function loadPlants() {
+      setLoading(true)
+      setError('')
+
+      try {
+        const params = new URLSearchParams()
+
+        if (search.trim()) params.set('search', search.trim())
+        if (category) params.set('category', category)
+        if (minPrice !== '') params.set('minPrice', minPrice)
+        if (maxPrice !== '') params.set('maxPrice', maxPrice)
+
+        const query = params.toString()
+        const response = await fetch(
+          `${API_URL}${query ? `?${query}` : ''}`,
+          { signal: controller.signal }
+        )
+
+        const result = await response.json()
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || 'Could not load plants.')
+        }
+
+        setPlants(result.data)
+
+        const categoryResponse = await fetch(API_URL, {
+          signal: controller.signal,
+        })
+        const categoryResult = await categoryResponse.json()
+
+        if (!categoryResponse.ok || !categoryResult.success) {
+          throw new Error('Could not load plant categories.')
+        }
+
+        const uniqueCategories = [
+          ...new Set(
+            categoryResult.data.map((plant: Plant) => plant.category)
+          ),
+        ].sort() as string[]
+
+        setCategories(uniqueCategories)
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return
+
+        setError(
+          err instanceof Error ? err.message : 'Something went wrong.'
+        )
+      } finally {
+        if (!controller.signal.aborted) setLoading(false)
+      }
+    }
+
+    const timeout = window.setTimeout(loadPlants, 250)
+
+    return () => {
+      window.clearTimeout(timeout)
+      controller.abort()
+    }
+  }, [search, category, minPrice, maxPrice, reload])
+
+  function resetFilters() {
+    setSearch('')
+    setCategory('')
+    setMinPrice('')
+    setMaxPrice('')
+  }
+
+  function formatPrice(price: number) {
+    return `LKR ${price.toLocaleString('en-LK')}`
+  }
+
+  return (
+    <main className="site-shell" id="home">
+      <header className="site-header">
+        <a className="brand" href="#home" aria-label="Plantora home">
+          plantora<span>.</span>
+        </a>
+
+        <nav className="main-nav" aria-label="Main navigation">
+          <a href="#home">Home</a>
+          <a href="#plants">Plants</a>
+          <a href="#about">About</a>
+        </nav>
+
+        <a className="header-button" href="#plants">
+          Explore plants <span>↗</span>
+        </a>
+      </header>
+
+      <section className="hero">
+        <div className="hero-copy">
+          <p className="eyebrow">A LITTLE MORE GREEN</p>
+
+          <h1>
+            Find your perfect
+            <br />
+            <span>green companion.</span>
+          </h1>
+
+          <p className="hero-description">
+            Discover plants that bring your spaces to life.
+            Explore our collection and find the right green
+            companion for your home.
+          </p>
+
+          <a className="primary-button" href="#plants">
+            Discover plants <span>↗</span>
+          </a>
+
+          <p className="hero-note">Discover. Choose. Grow.</p>
+        </div>
+
+        <div className="hero-art">
+          <img
+            className="hero-plant-photo"
+            src="/image/hero-plant.png"
+            alt="Green indoor plant"
+          />
+
+          <p className="hero-tagline">
+  Bring nature home<span>.</span>
+</p>
+        </div>
+      </section>
+
+      <section className="catalogue" id="plants">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">THE PLANT COLLECTION</p>
+            <h2>Find your next favourite.</h2>
+            <p className="section-description">
+              Thoughtfully selected greens for your space.
+            </p>
+          </div>
+
+          <span className="catalogue-label">PLANTORA COLLECTION</span>
+        </div>
+
+        <div className="filter-panel">
+          <div className="search-field">
+            <label htmlFor="plant-search">Search plants</label>
+
+            <div className="search-input-wrap">
+              <span aria-hidden="true">⌕</span>
+              <input
+                id="plant-search"
+                type="search"
+                placeholder="Try Monstera, Aloe..."
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="filter-field">
+            <label htmlFor="category-filter">Category</label>
+            <select
+              id="category-filter"
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+            >
+              <option value="">All categories</option>
+              {categories.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-field">
+            <label htmlFor="min-price">Min. price (LKR)</label>
+            <input
+              id="min-price"
+              type="number"
+              min="0"
+              placeholder="0"
+              value={minPrice}
+              onChange={(event) => setMinPrice(event.target.value)}
+            />
+          </div>
+
+          <div className="filter-field">
+            <label htmlFor="max-price">Max. price (LKR)</label>
+            <input
+              id="max-price"
+              type="number"
+              min="0"
+              placeholder="Any"
+              value={maxPrice}
+              onChange={(event) => setMaxPrice(event.target.value)}
+            />
+          </div>
+
+          <button
+            className="reset-button"
+            type="button"
+            onClick={resetFilters}
+          >
+            Reset
+          </button>
+        </div>
+
+        {minPrice !== '' &&
+          maxPrice !== '' &&
+          Number(minPrice) > Number(maxPrice) && (
+            <p className="validation-message" role="alert">
+              Minimum price must not exceed maximum price.
+            </p>
+          )}
+
+        <div className="results-heading">
+          <p>
+            {loading
+              ? 'Loading collection...'
+              : `${plants.length} ${plants.length === 1 ? 'plant' : 'plants'} found`}
+          </p>
+
+          <span>Prices shown in Sri Lankan rupees</span>
+        </div>
+
+        {loading ? (
+          <div className="status-panel" role="status">
+            <span className="loader" />
+            <p>Growing your collection...</p>
+          </div>
+        ) : error ? (
+          <div className="status-panel error-panel" role="alert">
+            <span className="status-icon">!</span>
+            <h3>We couldn't load the plants.</h3>
+            <p>{error}</p>
+            <button
+              className="primary-button"
+              type="button"
+              onClick={() => setReload((value) => value + 1)}
+            >
+              Try again
+            </button>
+          </div>
+        ) : minPrice !== '' &&
+          maxPrice !== '' &&
+          Number(minPrice) > Number(maxPrice) ? (
+          <div className="status-panel">
+            <h3>Check your price range</h3>
+            <p>
+              Enter a maximum price greater than or equal to the minimum.
+            </p>
+          </div>
+        ) : plants.length === 0 ? (
+          <div className="status-panel">
+            <span className="empty-icon">🌱</span>
+            <h3>No plants found</h3>
+            <p>Try another search or adjust your filters.</p>
+            <button
+              className="primary-button"
+              type="button"
+              onClick={resetFilters}
+            >
+              Clear filters
+            </button>
+          </div>
+        ) : (
+          <div className="plant-grid">
+            {plants.map((plant, index) => (
+              <article className="plant-card" key={plant._id}>
+                <div className="plant-image-wrap">
+                  <img
+                    className="plant-image"
+                    src={plant.imageUrl}
+                    alt={plant.name}
+                    loading={index < 3 ? 'eager' : 'lazy'}
+                    onError={(event) => {
+                      event.currentTarget.style.display = 'none'
+
+                      const fallback =
+                        event.currentTarget.nextElementSibling
+
+                      if (fallback instanceof HTMLElement) {
+                        fallback.style.display = 'grid'
+                      }
+                    }}
+                  />
+
+                  <div className="image-fallback" aria-hidden="true">
+                    <span>🌿</span>
+                    <small>Plantora</small>
+                  </div>
+
+                  <span className="category-badge">
+                    {plant.category}
+                  </span>
+                </div>
+
+                <div className="plant-card-content">
+                  <p className="plant-category">
+                    {plant.category} plant
+                  </p>
+
+                  <h3>{plant.name}</h3>
+
+                  <p className="plant-description">
+                    {plant.description}
+                  </p>
+
+                  <div className="plant-card-bottom">
+                    <div>
+                      <span className="price-label">PRICE</span>
+                      <p className="plant-price">
+                        {formatPrice(plant.price)}
+                      </p>
+                    </div>
+
+                    <span
+                      className="plant-arrow"
+                      aria-label="Plant listing"
+                    >
+                      ↗
+                    </span>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <footer className="site-footer" id="about">
+        <a className="brand" href="#home">
+          plantora<span>.</span>
+        </a>
+
+        <p>Make room for nature.</p>
+        <span>Plant marketplace · V1</span>
+      </footer>
+    </main>
+  )
+}
+
+export default App
