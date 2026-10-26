@@ -1,6 +1,15 @@
 
 import { useEffect, useState } from 'react'
+import {
+  BrowserRouter,
+  Link,
+  Route,
+  Routes,
+  useNavigate,
+  useParams,
+} from 'react-router-dom'
 import './App.css'
+import RecommendationsPage from './RecommendationsPage'
 
 type Plant = {
   _id: string
@@ -14,7 +23,65 @@ type Plant = {
 
 const API_URL = 'http://localhost:5000/api/plants'
 
-function App() {
+function formatPrice(price: number) {
+  return `LKR ${price.toLocaleString('en-LK')}`
+}
+
+function PlantImage({
+  plant,
+  className = '',
+}: {
+  plant: Plant
+  className?: string
+}) {
+  const [imageFailed, setImageFailed] = useState(false)
+
+  return (
+    <div className={`plant-image-wrap ${className}`}>
+      {!imageFailed ? (
+        <img
+          className="plant-image"
+          src={plant.imageUrl}
+          alt={plant.name}
+          onError={() => setImageFailed(true)}
+        />
+      ) : (
+        <div
+          className="image-fallback"
+          aria-label={`${plant.name} image unavailable`}
+        >
+          <span>🌿</span>
+          <small>Plantora</small>
+        </div>
+      )}
+
+      <span className="category-badge">{plant.category}</span>
+    </div>
+  )
+}
+
+function SiteHeader() {
+  return (
+    <header className="site-header">
+      <Link className="brand" to="/" aria-label="Plantora home">
+        plantora<span>.</span>
+      </Link>
+
+      <nav className="main-nav" aria-label="Main navigation">
+        <Link to="/">Home</Link>
+        <Link to="/#plants">Plants</Link>
+        <Link to="/recommendations">Recommendations</Link>
+        <Link to="/#about">About</Link>
+      </nav>
+
+      <Link className="header-button" to="/#plants">
+        Explore plants <span>↗</span>
+      </Link>
+    </header>
+  )
+}
+
+function HomePage() {
   const [plants, setPlants] = useState<Plant[]>([])
   const [categories, setCategories] = useState<string[]>([])
   const [search, setSearch] = useState('')
@@ -96,27 +163,14 @@ function App() {
     setMaxPrice('')
   }
 
-  function formatPrice(price: number) {
-    return `LKR ${price.toLocaleString('en-LK')}`
-  }
+  const invalidPriceRange =
+    minPrice !== '' &&
+    maxPrice !== '' &&
+    Number(minPrice) > Number(maxPrice)
 
   return (
     <main className="site-shell" id="home">
-      <header className="site-header">
-        <a className="brand" href="#home" aria-label="Plantora home">
-          plantora<span>.</span>
-        </a>
-
-        <nav className="main-nav" aria-label="Main navigation">
-          <a href="#home">Home</a>
-          <a href="#plants">Plants</a>
-          <a href="#about">About</a>
-        </nav>
-
-        <a className="header-button" href="#plants">
-          Explore plants <span>↗</span>
-        </a>
-      </header>
+      <SiteHeader />
 
       <section className="hero">
         <div className="hero-copy">
@@ -149,8 +203,8 @@ function App() {
           />
 
           <p className="hero-tagline">
-  Bring nature home<span>.</span>
-</p>
+            Bring nature home<span>.</span>
+          </p>
         </div>
       </section>
 
@@ -232,13 +286,11 @@ function App() {
           </button>
         </div>
 
-        {minPrice !== '' &&
-          maxPrice !== '' &&
-          Number(minPrice) > Number(maxPrice) && (
-            <p className="validation-message" role="alert">
-              Minimum price must not exceed maximum price.
-            </p>
-          )}
+        {invalidPriceRange && (
+          <p className="validation-message" role="alert">
+            Minimum price must not exceed maximum price.
+          </p>
+        )}
 
         <div className="results-heading">
           <p>
@@ -268,9 +320,7 @@ function App() {
               Try again
             </button>
           </div>
-        ) : minPrice !== '' &&
-          maxPrice !== '' &&
-          Number(minPrice) > Number(maxPrice) ? (
+        ) : invalidPriceRange ? (
           <div className="status-panel">
             <h3>Check your price range</h3>
             <p>
@@ -292,63 +342,40 @@ function App() {
           </div>
         ) : (
           <div className="plant-grid">
-            {plants.map((plant, index) => (
+            {plants.map((plant) => (
               <article className="plant-card" key={plant._id}>
-                <div className="plant-image-wrap">
-                  <img
-                    className="plant-image"
-                    src={plant.imageUrl}
-                    alt={plant.name}
-                    loading={index < 3 ? 'eager' : 'lazy'}
-                    onError={(event) => {
-                      event.currentTarget.style.display = 'none'
+                <Link
+                  className="plant-card-link"
+                  to={`/plants/${plant._id}`}
+                  aria-label={`View details for ${plant.name}`}
+                >
+                  <PlantImage plant={plant} />
 
-                      const fallback =
-                        event.currentTarget.nextElementSibling
+                  <div className="plant-card-content">
+                    <p className="plant-category">
+                      {plant.category} plant
+                    </p>
 
-                      if (fallback instanceof HTMLElement) {
-                        fallback.style.display = 'grid'
-                      }
-                    }}
-                  />
+                    <h3>{plant.name}</h3>
 
-                  <div className="image-fallback" aria-hidden="true">
-                    <span>🌿</span>
-                    <small>Plantora</small>
-                  </div>
+                    <p className="plant-description">
+                      {plant.description}
+                    </p>
 
-                  <span className="category-badge">
-                    {plant.category}
-                  </span>
-                </div>
+                    <div className="plant-card-bottom">
+                      <div>
+                        <span className="price-label">PRICE</span>
+                        <p className="plant-price">
+                          {formatPrice(plant.price)}
+                        </p>
+                      </div>
 
-                <div className="plant-card-content">
-                  <p className="plant-category">
-                    {plant.category} plant
-                  </p>
-
-                  <h3>{plant.name}</h3>
-
-                  <p className="plant-description">
-                    {plant.description}
-                  </p>
-
-                  <div className="plant-card-bottom">
-                    <div>
-                      <span className="price-label">PRICE</span>
-                      <p className="plant-price">
-                        {formatPrice(plant.price)}
-                      </p>
+                      <span className="plant-arrow" aria-hidden="true">
+                        ↗
+                      </span>
                     </div>
-
-                    <span
-                      className="plant-arrow"
-                      aria-label="Plant listing"
-                    >
-                      ↗
-                    </span>
                   </div>
-                </div>
+                </Link>
               </article>
             ))}
           </div>
@@ -356,14 +383,199 @@ function App() {
       </section>
 
       <footer className="site-footer" id="about">
-        <a className="brand" href="#home">
+        <Link className="brand" to="/">
           plantora<span>.</span>
-        </a>
+        </Link>
 
         <p>Make room for nature.</p>
         <span>Plant marketplace · V1</span>
       </footer>
     </main>
+  )
+}
+
+function PlantDetailsPage() {
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+
+  const [plant, setPlant] = useState<Plant | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    async function loadPlant() {
+      setLoading(true)
+      setError('')
+      setPlant(null)
+
+      try {
+        if (!id) {
+          throw new Error('Plant ID is missing.')
+        }
+
+        const response = await fetch(API_URL, {
+          signal: controller.signal,
+        })
+
+        const result = await response.json()
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || 'Could not load plant details.')
+        }
+
+        const selectedPlant = (result.data as Plant[]).find(
+          (item) => item._id === id
+        )
+
+        if (!selectedPlant) {
+          throw new Error('Plant not found in the collection.')
+        }
+
+        setPlant(selectedPlant)
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return
+
+        setError(
+          err instanceof Error ? err.message : 'Something went wrong.'
+        )
+      } finally {
+        if (!controller.signal.aborted) setLoading(false)
+      }
+    }
+
+    loadPlant()
+
+    return () => controller.abort()
+  }, [id])
+
+  return (
+    <main className="site-shell plant-details-page">
+      <SiteHeader />
+
+      <section className="plant-details">
+        <button
+          className="details-back-button"
+          type="button"
+          onClick={() => navigate('/#plants')}
+        >
+          ← Back to collection
+        </button>
+
+        {loading ? (
+          <div className="status-panel" role="status">
+            <span className="loader" />
+            <p>Loading plant details...</p>
+          </div>
+        ) : error || !plant ? (
+          <div className="status-panel error-panel" role="alert">
+            <span className="status-icon">!</span>
+            <h2>We couldn't find this plant.</h2>
+            <p>{error || 'This plant is not available.'}</p>
+            <Link className="primary-button" to="/#plants">
+              Explore collection
+            </Link>
+          </div>
+        ) : (
+          <div className="plant-details-layout">
+            <div className="plant-details-image">
+              {!plant.imageUrl ? (
+                <div className="image-fallback">
+                  <span>🌿</span>
+                  <small>Plantora</small>
+                </div>
+              ) : (
+                <img
+                  src={plant.imageUrl}
+                  alt={plant.name}
+                  onError={(event) => {
+                    event.currentTarget.style.display = 'none'
+                  }}
+                />
+              )}
+            </div>
+
+            <div className="plant-details-content">
+              <p className="eyebrow">MEET YOUR NEW GREEN COMPANION</p>
+
+              <span className="details-category">
+                {plant.category}
+              </span>
+
+              <h1>{plant.name}</h1>
+
+              <p className="details-price">
+                {formatPrice(plant.price)}
+              </p>
+
+              <p className="details-description">
+                {plant.description}
+              </p>
+
+              <div className="plant-care-info">
+                <span className="care-icon" aria-hidden="true">☀</span>
+                <div>
+                  <p className="care-label">SUNLIGHT REQUIREMENT</p>
+                  <p className="care-value">{plant.sunlight}</p>
+                </div>
+              </div>
+
+              <Link
+                className="primary-button details-collection-button"
+                to="/#plants"
+              >
+                Back to collection
+              </Link>
+
+              <p className="details-note">
+                Find the right plant and make room for nature.
+              </p>
+            </div>
+          </div>
+        )}
+      </section>
+
+      <footer className="site-footer" id="about">
+        <Link className="brand" to="/">
+          plantora<span>.</span>
+        </Link>
+
+        <p>Make room for nature.</p>
+        <span>Plant marketplace · V1</span>
+      </footer>
+    </main>
+  )
+}
+
+function NotFoundPage() {
+  return (
+    <main className="site-shell">
+      <SiteHeader />
+      <div className="status-panel">
+        <h1>Page not found</h1>
+        <p>The page you are looking for does not exist.</p>
+        <Link className="primary-button" to="/">
+          Return home
+        </Link>
+      </div>
+    </main>
+  )
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/plants/:id" element={<PlantDetailsPage />} />
+        <Route
+          path="/recommendations"
+          element={<RecommendationsPage />}
+        />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
 
