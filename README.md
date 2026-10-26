@@ -1,32 +1,101 @@
-# React + TypeScript + Vite
+# Plantora 🌿
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+**Discover your perfect indoor plants.**
 
-Currently, two official plugins are available:
+Plantora is a plant discovery web application designed to help users explore indoor plants, search and filter the collection, view plant details, and receive basic plant recommendations.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- Browse the plant catalogue
+- Search for plants
+- Filter plants by category and price
+- View individual plant details
+- Explore plant recommendations
+- Responsive homepage with an About section
+- MongoDB-backed plant data
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the Oxlint configuration
+**Frontend**
+- React
+- TypeScript
+- Vite
+- CSS
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+**Backend**
+- Node.js
+- Express.js
+- MongoDB Atlas
+- Mongoose
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## Getting Started
+
+### Prerequisites
+
+- Node.js and npm
+- MongoDB Atlas account or a configured MongoDB database
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/duminduue/plantora.git
+cd plantora
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+### 2. Install frontend dependencies
+
+```bash
+npm install
+```
+
+### 3. Configure the backend
+
+Navigate to the server directory:
+
+```bash
+cd server
+npm install
+```
+
+Create a `.env` file inside `server/` and configure the environment variables required by `server.js`, including your MongoDB connection string and backend port.
+
+**Do not commit `.env` or database credentials to GitHub.**
+
+### 4. Start the backend
+
+Use the start command configured in `server/package.json`.
+
+### 5. Start the frontend
+
+Open a second terminal in the project root and run:
+
+```bash
+npm run dev
+```
+
+Open the local URL displayed by Vite in your browser.
+
+## API
+
+The local plant API endpoint is:
+
+`http://localhost:5000/api/plants`
+
+## Project Status
+
+The main catalogue, search and filtering, plant details, basic recommendations, and responsive About section have been manually checked.
+
+Build verification and deployment readiness should be confirmed for the current version before production release.
+
+## Future Improvements
+
+- Production deployment
+- Automated end-to-end testing
+- Improved plant care information
+- Additional recommendation features
+
+## Author
+
+Dumindu Ekanayaka
+
+GitHub: https://github.com/duminduue

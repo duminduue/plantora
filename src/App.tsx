@@ -1,3 +1,4 @@
+// src/App.tsx
 
 import { useEffect, useState } from 'react'
 import {
@@ -5,6 +6,7 @@ import {
   Link,
   Route,
   Routes,
+  useLocation,
   useNavigate,
   useParams,
 } from 'react-router-dom'
@@ -26,6 +28,8 @@ const API_URL = 'http://localhost:5000/api/plants'
 function formatPrice(price: number) {
   return `LKR ${price.toLocaleString('en-LK')}`
 }
+
+/* -------------------- Plant Image -------------------- */
 
 function PlantImage({
   plant,
@@ -60,26 +64,93 @@ function PlantImage({
   )
 }
 
+/* -------------------- Navigation -------------------- */
+
 function SiteHeader() {
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  function navigateToSection(sectionId: string) {
+    if (location.pathname !== '/') {
+      navigate('/', { state: { scrollTo: sectionId } })
+      return
+    }
+
+    document.getElementById(sectionId)?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    })
+  }
+
+  useEffect(() => {
+    const state = location.state as { scrollTo?: string } | null
+    const sectionId = state?.scrollTo
+
+    if (location.pathname === '/' && sectionId) {
+      const timeout = window.setTimeout(() => {
+        document.getElementById(sectionId)?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        })
+
+        window.history.replaceState({}, document.title, '/')
+      }, 100)
+
+      return () => window.clearTimeout(timeout)
+    }
+  }, [location.pathname, location.state])
+
   return (
     <header className="site-header">
-      <Link className="brand" to="/" aria-label="Plantora home">
+      <Link
+        className="brand"
+        to="/"
+        aria-label="Plantora home"
+      >
         plantora<span>.</span>
       </Link>
 
       <nav className="main-nav" aria-label="Main navigation">
         <Link to="/">Home</Link>
-        <Link to="/#plants">Plants</Link>
+
+        <a
+          href="/#plants"
+          onClick={(event) => {
+            event.preventDefault()
+            navigateToSection('plants')
+          }}
+        >
+          Plants
+        </a>
+
         <Link to="/recommendations">Recommendations</Link>
-        <Link to="/#about">About</Link>
+
+        <a
+          href="/#about"
+          onClick={(event) => {
+            event.preventDefault()
+            navigateToSection('about')
+          }}
+        >
+          About
+        </a>
       </nav>
 
-      <Link className="header-button" to="/#plants">
+      <a
+        className="header-button"
+        href="/#plants"
+        onClick={(event) => {
+          event.preventDefault()
+          navigateToSection('plants')
+        }}
+      >
         Explore plants <span>↗</span>
-      </Link>
+      </a>
     </header>
   )
 }
+
+/* -------------------- Homepage -------------------- */
 
 function HomePage() {
   const [plants, setPlants] = useState<Plant[]>([])
@@ -124,6 +195,7 @@ function HomePage() {
         const categoryResponse = await fetch(API_URL, {
           signal: controller.signal,
         })
+
         const categoryResult = await categoryResponse.json()
 
         if (!categoryResponse.ok || !categoryResult.success) {
@@ -172,6 +244,7 @@ function HomePage() {
     <main className="site-shell" id="home">
       <SiteHeader />
 
+      {/* Hero */}
       <section className="hero">
         <div className="hero-copy">
           <p className="eyebrow">A LITTLE MORE GREEN</p>
@@ -188,7 +261,17 @@ function HomePage() {
             companion for your home.
           </p>
 
-          <a className="primary-button" href="#plants">
+          <a
+            className="primary-button"
+            href="#plants"
+            onClick={(event) => {
+              event.preventDefault()
+              document.getElementById('plants')?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+              })
+            }}
+          >
             Discover plants <span>↗</span>
           </a>
 
@@ -208,6 +291,7 @@ function HomePage() {
         </div>
       </section>
 
+      {/* Plant Catalogue */}
       <section className="catalogue" id="plants">
         <div className="section-heading">
           <div>
@@ -382,7 +466,93 @@ function HomePage() {
         )}
       </section>
 
-      <footer className="site-footer" id="about">
+      {/* About Plantora */}
+      <section className="about-section" id="about">
+        <div className="about-inner">
+          <div className="about-heading">
+            <p className="eyebrow">ABOUT PLANTORA</p>
+
+            <h2>
+              A little more green,
+              <br />
+              <span>a little more life.</span>
+            </h2>
+
+            <p className="about-description">
+              Plantora helps plant lovers discover indoor plants
+              for their spaces. Explore our collection, compare
+              prices, and find green companions that suit your
+              preferences and home.
+            </p>
+
+            <a
+              className="primary-button about-button"
+              href="/#plants"
+              onClick={(event) => {
+                event.preventDefault()
+                document.getElementById('plants')?.scrollIntoView({
+                  behavior: 'smooth',
+                  block: 'start',
+                })
+              }}
+            >
+              Explore our collection <span>↗</span>
+            </a>
+          </div>
+
+          {/* Transparent plant image on the right */}
+          <div className="about-visual" aria-hidden="true">
+            <img
+              src="/image/about-plant.png"
+              alt=""
+              className="about-plant-image"
+              loading="lazy"
+            />
+          </div>
+
+          {/* About features */}
+          <div className="about-features">
+            <article className="about-feature-card">
+              <div className="about-feature-icon" aria-hidden="true">
+                🌿
+              </div>
+              <p className="about-feature-number">01</p>
+              <h3>Discover</h3>
+              <p>
+                Explore our plant collection and discover
+                different varieties for your space.
+              </p>
+            </article>
+
+            <article className="about-feature-card">
+              <div className="about-feature-icon" aria-hidden="true">
+                ☀️
+              </div>
+              <p className="about-feature-number">02</p>
+              <h3>Choose</h3>
+              <p>
+                Find suitable options using category,
+                price and sunlight information.
+              </p>
+            </article>
+
+            <article className="about-feature-card">
+              <div className="about-feature-icon" aria-hidden="true">
+                🪴
+              </div>
+              <p className="about-feature-number">03</p>
+              <h3>Grow</h3>
+              <p>
+                Find a green companion that inspires
+                you to bring more nature into your home.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="site-footer">
         <Link className="brand" to="/">
           plantora<span>.</span>
         </Link>
@@ -393,6 +563,8 @@ function HomePage() {
     </main>
   )
 }
+
+/* -------------------- Plant Details Page -------------------- */
 
 function PlantDetailsPage() {
   const { id } = useParams<{ id: string }>()
@@ -458,7 +630,7 @@ function PlantDetailsPage() {
         <button
           className="details-back-button"
           type="button"
-          onClick={() => navigate('/#plants')}
+          onClick={() => navigate('/', { state: { scrollTo: 'plants' } })}
         >
           ← Back to collection
         </button>
@@ -473,7 +645,11 @@ function PlantDetailsPage() {
             <span className="status-icon">!</span>
             <h2>We couldn't find this plant.</h2>
             <p>{error || 'This plant is not available.'}</p>
-            <Link className="primary-button" to="/#plants">
+            <Link
+              className="primary-button"
+              to="/"
+              state={{ scrollTo: 'plants' }}
+            >
               Explore collection
             </Link>
           </div>
@@ -521,12 +697,15 @@ function PlantDetailsPage() {
                 </div>
               </div>
 
-              <Link
+              <button
                 className="primary-button details-collection-button"
-                to="/#plants"
+                type="button"
+                onClick={() =>
+                  navigate('/', { state: { scrollTo: 'plants' } })
+                }
               >
                 Back to collection
-              </Link>
+              </button>
 
               <p className="details-note">
                 Find the right plant and make room for nature.
@@ -548,13 +727,17 @@ function PlantDetailsPage() {
   )
 }
 
+/* -------------------- Not Found Page -------------------- */
+
 function NotFoundPage() {
   return (
     <main className="site-shell">
       <SiteHeader />
+
       <div className="status-panel">
         <h1>Page not found</h1>
         <p>The page you are looking for does not exist.</p>
+
         <Link className="primary-button" to="/">
           Return home
         </Link>
@@ -562,6 +745,8 @@ function NotFoundPage() {
     </main>
   )
 }
+
+/* -------------------- App Routes -------------------- */
 
 function App() {
   return (
