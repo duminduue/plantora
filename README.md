@@ -1,8 +1,8 @@
-# Plantora 🌿
+# PlantorAI 🌿
 
 **Discover your perfect indoor plants.**
 
-Plantora is a plant discovery web application designed to help users explore indoor plants, search and filter the collection, view plant details, and receive basic plant recommendations.
+PlantorAI is a plant discovery web application designed to help users explore indoor plants, search and filter the collection, view plant details, and receive basic plant recommendations.
 
 ## Features
 
