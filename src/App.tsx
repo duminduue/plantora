@@ -12,6 +12,7 @@ import {
 } from 'react-router-dom'
 import './App.css'
 import RecommendationsPage from './RecommendationsPage'
+import { API_URL } from './config'
 
 type Plant = {
   _id: string
@@ -23,7 +24,6 @@ type Plant = {
   sunlight: string
 }
 
-const API_URL = 'http://localhost:5000/api/plants'
 
 function formatPrice(price: number) {
   return `LKR ${price.toLocaleString('en-LK')}`
