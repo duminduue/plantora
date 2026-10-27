@@ -15,14 +15,14 @@ app.use('/api/plants', plantRoutes)
 app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: 'Plantora API is running 🌿',
+    message: 'PlantorAI API is running 🌿',
   })
 })
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     success: true,
-    service: 'Plantora API',
+    service: 'PlantorAI API',
     status: 'healthy',
     database: mongoose.connection.readyState === 1
       ? 'connected'
@@ -40,10 +40,10 @@ async function startServer() {
       serverSelectionTimeoutMS: 10000,
     })
 
-    console.log('Plantora MongoDB connected successfully 🌿')
+    console.log('PlantorAI MongoDB connected successfully 🌿')
 
     app.listen(PORT, () => {
-      console.log(`Plantora API running at http://localhost:${PORT}`)
+      console.log(`PlantorAI API running at http://localhost:${PORT}`)
     })
   } catch (error) {
     console.error('Startup failed:', error.message)
