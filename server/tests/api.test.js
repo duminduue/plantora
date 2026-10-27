@@ -157,5 +157,42 @@ describe('PlantorAI API', () => {
     expect(response.body.message).toBe('Plant not found')
   })
 
+  
+  it('GET /api/plants should reject an invalid maximum price', async () => {
+    const response = await request(app).get('/api/plants?maxPrice=abc')
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+    expect(response.body.message).toBe('maxPrice must be a valid number')
+  })
+
+  it('GET /api/plants should reject a negative price', async () => {
+    const response = await request(app).get('/api/plants?minPrice=-100')
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+    expect(response.body.message).toBe('Price range is invalid')
+  })
+
+  it('GET /api/plants should reject a reversed price range', async () => {
+    const response = await request(app).get(
+      '/api/plants?minPrice=5000&maxPrice=1000'
+    )
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+    expect(response.body.message).toBe('Price range is invalid')
+  })
+
+  it('GET /api/plants should return no results for an unmatched search', async () => {
+    const response = await request(app).get(
+      '/api/plants?search=NoSuchPlantName123'
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.body.success).toBe(true)
+    expect(response.body.count).toBe(0)
+    expect(response.body.data).toEqual([])
+  })
 
 })
