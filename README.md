@@ -48,6 +48,14 @@ cd plantora
 npm install
 ```
 
+The frontend uses `http://localhost:5000/api/plants` by default. To override it, create a `.env` file in the project root and set:
+
+```env
+VITE_API_URL=http://localhost:5000/api/plants
+```
+
+For deployment, set `VITE_API_URL` to the deployed backend's plant API URL in the frontend hosting environment, then rebuild/redeploy the frontend. Vite environment variables are included in the client bundle, so do not put secrets in `VITE_*` variables.
+
 ### 3. Configure the backend
 
 Navigate to the server directory:
