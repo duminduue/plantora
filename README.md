@@ -44,6 +44,8 @@ cd plantora
 
 ### 2. Install frontend dependencies
 
+From the project root:
+
 ```bash
 npm install
 ```
@@ -58,7 +60,7 @@ For deployment, set `VITE_API_URL` to the deployed backend's plant API URL in th
 
 ### 3. Configure the backend
 
-Navigate to the server directory:
+Open a terminal in the server directory:
 
 ```bash
 cd server
@@ -71,7 +73,7 @@ Create a `.env` file inside `server/` and configure the environment variables re
 
 ### 4. Start the backend
 
-Use the start command configured in `server/package.json`.
+From the `server` directory, use the start command configured in `server/package.json`.
 
 ### 5. Start the frontend
 
@@ -89,11 +91,29 @@ The local plant API endpoint is:
 
 `http://localhost:5000/api/plants`
 
+## Testing
+
+### Frontend production build
+
+Run from the project root:
+
+```bash
+npm run build
+```
+
+### Backend automated API tests
+
+Run from the `server` directory:
+
+```bash
+npm test
+```
+
+The backend API tests use Vitest and Supertest. They cover API health and catalogue retrieval, search and category filters, price validation, and plant ID handling.
+
 ## Project Status
 
-The main catalogue, search and filtering, plant details, basic recommendations, and responsive About section have been manually checked.
-
-Build verification and deployment readiness should be confirmed for the current version before production release.
+The catalogue, search and filtering, plant details, basic recommendations, and responsive About section have been manually checked. The backend API test suite has been run during development. Re-run the frontend production build and backend tests against the latest changes before production release.
 
 ## Future Improvements
 
