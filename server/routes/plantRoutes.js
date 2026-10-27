@@ -11,6 +11,17 @@ router.get('/', async (req, res) => {
     const { search, category, minPrice, maxPrice } = req.query
     const filter = {}
 
+    // Reject repeated or non-string query parameters instead of crashing on .trim().
+    const queryValues = { search, category, minPrice, maxPrice }
+    for (const [key, value] of Object.entries(queryValues)) {
+      if (value !== undefined && typeof value !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: key + ' must be a single string value',
+        })
+      }
+    }
+
     if (search?.trim()) {
       filter.name = {
         $regex: search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
@@ -20,14 +31,14 @@ router.get('/', async (req, res) => {
 
     if (category?.trim()) {
       filter.category = {
-        $regex: `^${category.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
+        $regex: '^' + category.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$',
         $options: 'i',
       }
     }
 
     if (minPrice !== undefined || maxPrice !== undefined) {
-      const min = minPrice === undefined ? 0 : Number(minPrice)
-      const max = maxPrice === undefined ? Infinity : Number(maxPrice)
+      const min = minPrice === undefined ? undefined : Number(minPrice)
+      const max = maxPrice === undefined ? undefined : Number(maxPrice)
 
       if (
         minPrice !== undefined &&
@@ -49,14 +60,20 @@ router.get('/', async (req, res) => {
         })
       }
 
-      if (min < 0 || max < 0 || min > max) {
+      if (
+        (min !== undefined && min < 0) ||
+        (max !== undefined && max < 0) ||
+        (min !== undefined && max !== undefined && min > max)
+      ) {
         return res.status(400).json({
           success: false,
           message: 'Price range is invalid',
         })
       }
 
-      filter.price = { $gte: min, $lte: max }
+      filter.price = {}
+      if (min !== undefined) filter.price.$gte = min
+      if (max !== undefined) filter.price.$lte = max
     }
 
     const plants = await Plant.find(filter).sort({ createdAt: -1 })
