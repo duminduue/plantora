@@ -94,8 +94,8 @@ export default function RecommendationsPage() {
   return (
     <main className="site-shell recommendations-page">
       <header className="site-header">
-        <Link className="brand" to="/" aria-label="Plantora home">
-          plantora<span>.</span>
+        <Link className="brand" to="/" aria-label="PlantorAI home">
+          plantorai<span>.</span>
         </Link>
 
         <nav className="main-nav" aria-label="Main navigation">
@@ -289,7 +289,7 @@ export default function RecommendationsPage() {
                           aria-hidden="true"
                         >
                           <span>🌿</span>
-                          <small>Plantora</small>
+                          <small>PlantorAI</small>
                         </div>
                         <span className="category-badge">
                           {plant.category}
@@ -330,7 +330,7 @@ export default function RecommendationsPage() {
 
       <footer className="site-footer">
         <Link className="brand" to="/">
-          plantora<span>.</span>
+          plantorai<span>.</span>
         </Link>
         <p>Make room for nature.</p>
         <span>Plant marketplace · V1</span>
