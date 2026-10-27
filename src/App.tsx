@@ -587,7 +587,7 @@ function PlantDetailsPage() {
           throw new Error('Plant ID is missing.')
         }
 
-        const response = await fetch(API_URL, {
+        const response = await fetch(`${API_URL}/${encodeURIComponent(id)}`, {
           signal: controller.signal,
         })
 
@@ -597,15 +597,7 @@ function PlantDetailsPage() {
           throw new Error(result.message || 'Could not load plant details.')
         }
 
-        const selectedPlant = (result.data as Plant[]).find(
-          (item) => item._id === id
-        )
-
-        if (!selectedPlant) {
-          throw new Error('Plant not found in the collection.')
-        }
-
-        setPlant(selectedPlant)
+        setPlant(result.data as Plant)
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return
 
