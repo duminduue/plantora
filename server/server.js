@@ -47,8 +47,12 @@ async function startServer() {
     })
   } catch (error) {
     console.error('Startup failed:', error.message)
-    process.exit(1)
+    process.exitCode = 1
   }
 }
 
-startServer()
+if (require.main === module) {
+  startServer()
+}
+
+module.exports = { app, startServer }
