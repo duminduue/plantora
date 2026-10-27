@@ -133,4 +133,29 @@ describe('PlantorAI API', () => {
     ).toBe(true)
   })
 
+  
+  it('GET /api/plants/:id should return a plant for a valid existing ID', async () => {
+    const listResponse = await request(app).get('/api/plants')
+
+    expect(listResponse.status).toBe(200)
+    expect(listResponse.body.data.length).toBeGreaterThan(0)
+
+    const plantId = listResponse.body.data[0]._id
+    const response = await request(app).get(`/api/plants/${plantId}`)
+
+    expect(response.status).toBe(200)
+    expect(response.body.success).toBe(true)
+    expect(response.body.data._id).toBe(plantId)
+  })
+
+  it('GET /api/plants/:id should return 404 for a valid but nonexistent ID', async () => {
+    const nonexistentId = '000000000000000000000000'
+    const response = await request(app).get(`/api/plants/${nonexistentId}`)
+
+    expect(response.status).toBe(404)
+    expect(response.body.success).toBe(false)
+    expect(response.body.message).toBe('Plant not found')
+  })
+
+
 })
