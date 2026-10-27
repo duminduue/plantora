@@ -8,12 +8,15 @@ import {
 } from 'vitest'
 import request from 'supertest'
 import mongoose from 'mongoose'
+import User from '../models/User.js'
 import serverModule from '../server.js'
 
 const { app } = serverModule
+const testEmails = []
 
 describe('PlantorAI API', () => {
   beforeAll(async () => {
+    process.env.JWT_SECRET ||= 'test-only-secret-at-least-32-characters-long'
     if (mongoose.connection.readyState !== 1) {
       if (!process.env.MONGODB_URI) {
         throw new Error('MONGODB_URI is missing from server/.env')
@@ -26,6 +29,9 @@ describe('PlantorAI API', () => {
   }, 15000)
 
   afterAll(async () => {
+    if (mongoose.connection.readyState === 1 && testEmails.length) {
+      await User.deleteMany({ email: { $in: testEmails } })
+    }
     if (mongoose.connection.readyState !== 0) {
       await mongoose.disconnect()
     }
@@ -193,6 +199,106 @@ describe('PlantorAI API', () => {
     expect(response.body.success).toBe(true)
     expect(response.body.count).toBe(0)
     expect(response.body.data).toEqual([])
+  })
+
+
+  it('POST /api/auth/register should create a customer with a hashed password', async () => {
+    const email = `auth-test-${Date.now()}@example.com`
+    testEmails.push(email)
+    const response = await request(app).post('/api/auth/register').send({
+      name: 'Auth Test User',
+      email,
+      password: 'StrongPassword123',
+      role: 'admin',
+    })
+
+    expect(response.status).toBe(201)
+    expect(response.body.success).toBe(true)
+    expect(response.body.user.email).toBe(email)
+    expect(response.body.user.role).toBe('customer')
+    expect(response.body.user.passwordHash).toBeUndefined()
+    expect(typeof response.body.token).toBe('string')
+
+    const savedUser = await User.findOne({ email }).select('+passwordHash')
+    expect(savedUser.passwordHash).not.toBe('StrongPassword123')
+    expect(savedUser.role).toBe('customer')
+  })
+
+  it('POST /api/auth/register should reject invalid inputs', async () => {
+    const response = await request(app).post('/api/auth/register').send({
+      name: 'A',
+      email: 'not-an-email',
+      password: 'short',
+    })
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+  })
+
+  it('POST /api/auth/register should reject a duplicate email', async () => {
+    const email = `auth-duplicate-${Date.now()}@example.com`
+    testEmails.push(email)
+    const payload = { name: 'Duplicate Test', email, password: 'StrongPassword123' }
+    const first = await request(app).post('/api/auth/register').send(payload)
+    const second = await request(app).post('/api/auth/register').send(payload)
+
+    expect(first.status).toBe(201)
+    expect(second.status).toBe(409)
+  })
+
+  it('POST /api/auth/login should return a token for valid credentials', async () => {
+    const email = `auth-login-${Date.now()}@example.com`
+    testEmails.push(email)
+    await request(app).post('/api/auth/register').send({
+      name: 'Login Test',
+      email,
+      password: 'StrongPassword123',
+    })
+
+    const response = await request(app).post('/api/auth/login').send({
+      email: email.toUpperCase(),
+      password: 'StrongPassword123',
+    })
+
+    expect(response.status).toBe(200)
+    expect(response.body.success).toBe(true)
+    expect(typeof response.body.token).toBe('string')
+    expect(response.body.user.role).toBe('customer')
+  })
+
+  it('POST /api/auth/login should reject incorrect credentials', async () => {
+    const response = await request(app).post('/api/auth/login').send({
+      email: 'nobody@example.com',
+      password: 'WrongPassword123',
+    })
+
+    expect(response.status).toBe(401)
+    expect(response.body.message).toBe('Invalid email or password')
+  })
+
+  it('GET /api/auth/me should require a valid token', async () => {
+    const response = await request(app).get('/api/auth/me')
+
+    expect(response.status).toBe(401)
+    expect(response.body.success).toBe(false)
+  })
+
+  it('GET /api/auth/me should return the current user with a valid token', async () => {
+    const email = `auth-me-${Date.now()}@example.com`
+    testEmails.push(email)
+    const registration = await request(app).post('/api/auth/register').send({
+      name: 'Me Test',
+      email,
+      password: 'StrongPassword123',
+    })
+
+    const response = await request(app)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${registration.body.token}`)
+
+    expect(response.status).toBe(200)
+    expect(response.body.user.email).toBe(email)
+    expect(response.body.user.role).toBe('customer')
   })
 
 })

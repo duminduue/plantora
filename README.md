@@ -13,6 +13,8 @@ PlantorAI is a plant discovery web application designed to help users explore in
 - Explore plant recommendations
 - Responsive homepage with an About section
 - MongoDB-backed plant data
+- Customer registration and login API with JWT authentication
+- Role-based authorization middleware for customer, seller, and admin roles
 
 ## Tech Stack
 
@@ -27,6 +29,8 @@ PlantorAI is a plant discovery web application designed to help users explore in
 - Express.js
 - MongoDB Atlas
 - Mongoose
+- bcryptjs password hashing
+- JSON Web Tokens (JWT)
 
 ## Getting Started
 
@@ -60,24 +64,24 @@ For deployment, set `VITE_API_URL` to the deployed backend's plant API URL in th
 
 ### 3. Configure the backend
 
-Open a terminal in the server directory:
-
 ```bash
 cd server
 npm install
 ```
 
-Create a `.env` file inside `server/` and configure the environment variables required by `server.js`, including your MongoDB connection string and backend port.
-
-**Do not commit `.env` or database credentials to GitHub.**
+Copy `.env.example` to `.env` and fill in your MongoDB connection string and a strong random `JWT_SECRET` (at least 32 characters). Keep `.env` private and never commit real credentials.
 
 ### 4. Start the backend
 
-From the `server` directory, use the start command configured in `server/package.json`.
+From the `server` directory:
+
+```bash
+npm run dev
+```
 
 ### 5. Start the frontend
 
-Open a second terminal in the project root and run:
+Open a second terminal in the project root:
 
 ```bash
 npm run dev
@@ -87,9 +91,21 @@ Open the local URL displayed by Vite in your browser.
 
 ## API
 
-The local plant API endpoint is:
+Base URL: `http://localhost:5000`
 
-`http://localhost:5000/api/plants`
+### Plants
+
+- `GET /api/plants` — list plants with optional search and filters
+- `GET /api/plants/:id` — get one plant
+- `PATCH /api/plants/:id` — update supported plant fields (currently image URL)
+
+### Authentication
+
+- `POST /api/auth/register` — create a customer account; expects `{ "name": "Example User", "email": "user@example.com", "password": "at-least-8-characters" }`
+- `POST /api/auth/login` — sign in; expects `{ "email": "user@example.com", "password": "your-password" }`
+- `GET /api/auth/me` — return the current authenticated user; requires `Authorization: Bearer <token>`
+
+Public registration always assigns the `customer` role. Seller/admin role assignment must be performed through a separately secured administrative process; clients cannot choose a privileged role during registration. JWTs expire after 1 day. The `authenticate` and `authorize` middleware are available for protecting future endpoints.
 
 ## Testing
 
@@ -109,11 +125,11 @@ Run from the `server` directory:
 npm test
 ```
 
-The backend API tests use Vitest and Supertest. They cover API health and catalogue retrieval, search and category filters, price validation, and plant ID handling.
+The existing backend API tests cover API health and catalogue retrieval, search and category filters, price validation, and plant ID handling. Authentication tests should be run after the auth API has been installed locally.
 
 ## Project Status
 
-The catalogue, search and filtering, plant details, basic recommendations, and responsive About section have been manually checked. The backend API test suite has been run during development. Re-run the frontend production build and backend tests against the latest changes before production release.
+The catalogue, search and filtering, plant details, basic recommendations, and responsive About section have been manually checked. Authentication endpoints and role middleware are the current Phase 2 implementation; run the backend tests and verify registration/login locally before treating this phase as complete.
 
 ## Future Improvements
 
@@ -121,6 +137,9 @@ The catalogue, search and filtering, plant details, basic recommendations, and r
 - Automated end-to-end testing
 - Improved plant care information
 - Additional recommendation features
+- Shopping cart and checkout
+- Seller and admin dashboards
+- AI plant-care assistant
 
 ## Author
 
