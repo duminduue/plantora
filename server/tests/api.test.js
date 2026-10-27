@@ -87,4 +87,50 @@ describe('PlantorAI API', () => {
     expect(response.body.success).toBe(false)
     expect(response.body.message).toBe('Invalid plant ID')
   })
+
+  
+  it('GET /api/plants should filter by minimum price', async () => {
+    const response = await request(app).get('/api/plants?minPrice=3000')
+
+    expect(response.status).toBe(200)
+    expect(response.body.success).toBe(true)
+    expect(
+      response.body.data.every((plant) => plant.price >= 3000)
+    ).toBe(true)
+  })
+
+  it('GET /api/plants should filter by maximum price', async () => {
+    const response = await request(app).get('/api/plants?maxPrice=3000')
+
+    expect(response.status).toBe(200)
+    expect(response.body.success).toBe(true)
+    expect(
+      response.body.data.every((plant) => plant.price <= 3000)
+    ).toBe(true)
+  })
+
+  it('GET /api/plants should filter by category', async () => {
+    const response = await request(app).get('/api/plants?category=Indoor')
+
+    expect(response.status).toBe(200)
+    expect(response.body.success).toBe(true)
+    expect(
+      response.body.data.every(
+        (plant) => plant.category.toLowerCase() === 'indoor'
+      )
+    ).toBe(true)
+  })
+
+  it('GET /api/plants should filter by search term', async () => {
+    const response = await request(app).get('/api/plants?search=Monstera')
+
+    expect(response.status).toBe(200)
+    expect(response.body.success).toBe(true)
+    expect(
+      response.body.data.every((plant) =>
+        plant.name.toLowerCase().includes('monstera')
+      )
+    ).toBe(true)
+  })
+
 })
