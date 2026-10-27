@@ -55,7 +55,7 @@ function PlantImage({
           aria-label={`${plant.name} image unavailable`}
         >
           <span>🌿</span>
-          <small>Plantora</small>
+          <small>PlantorAI</small>
         </div>
       )}
 
@@ -105,9 +105,9 @@ function SiteHeader() {
       <Link
         className="brand"
         to="/"
-        aria-label="Plantora home"
+        aria-label="PlantorAI home"
       >
-        plantora<span>.</span>
+        plantorai<span>.</span>
       </Link>
 
       <nav className="main-nav" aria-label="Main navigation">
@@ -466,7 +466,7 @@ function HomePage() {
         )}
       </section>
 
-      {/* About Plantora */}
+      {/* About PlantorAI */}
       <section className="about-section" id="about">
         <div className="about-inner">
           <div className="about-heading">
@@ -479,7 +479,7 @@ function HomePage() {
             </h2>
 
             <p className="about-description">
-              Plantora helps plant lovers discover indoor plants
+              PlantorAI helps plant lovers discover indoor plants
               for their spaces. Explore our collection, compare
               prices, and find green companions that suit your
               preferences and home.
@@ -554,7 +554,7 @@ function HomePage() {
       {/* Footer */}
       <footer className="site-footer">
         <Link className="brand" to="/">
-          plantora<span>.</span>
+          plantorai<span>.</span>
         </Link>
 
         <p>Make room for nature.</p>
@@ -651,7 +651,7 @@ function PlantDetailsPage() {
               {!plant.imageUrl ? (
                 <div className="image-fallback">
                   <span>🌿</span>
-                  <small>Plantora</small>
+                  <small>PlantorAI</small>
                 </div>
               ) : (
                 <img
@@ -709,7 +709,7 @@ function PlantDetailsPage() {
 
       <footer className="site-footer" id="about">
         <Link className="brand" to="/">
-          plantora<span>.</span>
+          plantorai<span>.</span>
         </Link>
 
         <p>Make room for nature.</p>
