@@ -390,6 +390,46 @@ describe('PlantorAI API', () => {
     expect(typeof allowed.body.data.customerCount).toBe('number')
   })
 
+  it('seller API should isolate listings by owner and require seller role', async () => {
+    const sellerA = await User.create({ name: 'Seller A', email: `seller-a-${Date.now()}@example.com`, passwordHash: 'test-only-hash', role: 'seller' })
+    const sellerB = await User.create({ name: 'Seller B', email: `seller-b-${Date.now()}@example.com`, passwordHash: 'test-only-hash', role: 'seller' })
+    testEmails.push(sellerA.email, sellerB.email)
+    const makeToken = (user) => jwt.sign({ sub: user._id.toString(), role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h', issuer: 'plantorai-api', audience: 'plantorai-client' })
+    const tokenA = makeToken(sellerA)
+    const tokenB = makeToken(sellerB)
+    const created = await request(app).post('/api/seller/plants').set('Authorization', `Bearer ${tokenA}`).send({
+      name: 'Seller Owned Fern', category: 'Indoor', price: 1200, stock: 5,
+      description: 'A test fern listing for seller isolation.', imageUrl: '', sunlight: 'Indirect light',
+    })
+    expect(created.status).toBe(201)
+    expect(created.body.data.moderationStatus).toBe('Pending')
+    expect(created.body.data.isActive).toBe(false)
+    testPlantIds.push(created.body.data._id)
+
+    const sellerBList = await request(app).get('/api/seller/plants').set('Authorization', `Bearer ${tokenB}`)
+    expect(sellerBList.status).toBe(200)
+    expect(sellerBList.body.data.some((plant) => plant._id === created.body.data._id)).toBe(false)
+
+    const forbiddenEdit = await request(app).patch(`/api/seller/plants/${created.body.data._id}`).set('Authorization', `Bearer ${tokenB}`).send({ price: 1 })
+    expect(forbiddenEdit.status).toBe(404)
+
+    const customerDenied = await request(app).get('/api/seller/plants').set('Authorization', `Bearer ${orderAuthToken}`)
+    expect(customerDenied.status).toBe(403)
+  })
+
+  it('admin user management should list users and update a role', async () => {
+    const user = await User.create({ name: 'Promoted Test Customer', email: `promote-${Date.now()}@example.com`, passwordHash: 'test-only-hash', role: 'customer' })
+    testEmails.push(user.email)
+    const admin = await User.create({ name: 'User Manager Admin', email: `user-admin-${Date.now()}@example.com`, passwordHash: 'test-only-hash', role: 'admin' })
+    testEmails.push(admin.email)
+    const token = jwt.sign({ sub: admin._id.toString(), role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '1h', issuer: 'plantorai-api', audience: 'plantorai-client' })
+    const listed = await request(app).get('/api/admin/users').set('Authorization', `Bearer ${token}`)
+    expect(listed.status).toBe(200)
+    const updated = await request(app).patch(`/api/admin/users/${user._id}`).set('Authorization', `Bearer ${token}`).send({ role: 'seller' })
+    expect(updated.status).toBe(200)
+    expect(updated.body.data.role).toBe('seller')
+  })
+
   it('admin restock should update inventory and create a stock history record', async () => {
     const adminEmail = `admin-restock-${Date.now()}@example.com`
     testEmails.push(adminEmail)
