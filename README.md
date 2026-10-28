@@ -77,7 +77,7 @@ The consolidated project overview, setup guide, architecture summary, phase road
 
 **[PlantorAI Master Project Documentation](docs/MASTER-PROJECT-DOCUMENTATION.md)**
 
-Latest owner-reported verification: 55 backend tests passed, production build successful, 7/7 manual regression workflows passed, and lint reported 0 errors with 2 remaining warnings. See the master document for details and limitations.
+Latest local verification record: 55 backend tests passed, production build successful, 7/7 manual regression workflows passed, and lint reported 0 errors with 2 remaining warnings. See the master document for scope and limitations. See the master document for details and limitations.
 
 ## Security reminders
 
