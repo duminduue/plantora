@@ -1315,7 +1315,7 @@ function CartPage() {
 /* -------------------- Admin Dashboard -------------------- */
 
 type ManagedUser = { _id: string; name: string; email: string; role: 'customer' | 'seller' | 'admin'; isActive: boolean; createdAt: string }
-type SellerOrder = AdminOrder
+type SellerOrder = { _id: string; orderNumber: string; status: 'Pending' | 'Processing' | 'Completed' | 'Cancelled'; createdAt: string; items: Array<{ name: string; quantity: number; unitPrice: number }>; sellerSubtotal: number }
 
 type AdminSummary = {
   plantCount: number
