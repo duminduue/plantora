@@ -1804,3 +1804,34 @@ select:focus-visible {
   .cart-line-total { grid-column: 2; }
   .cart-page { padding-top: 32px; }
 }
+
+
+/* COMPACT PLANT CARDS: prevent empty vertical space */
+.plant-grid {
+  align-items: start;
+}
+
+.plant-card {
+  height: fit-content;
+}
+
+.plant-card-link {
+  height: auto;
+}
+
+.plant-card-content {
+  padding-bottom: 12px;
+}
+
+.plant-description {
+  min-height: 0;
+  margin-bottom: 14px;
+}
+
+.plant-card-bottom {
+  padding-top: 12px;
+}
+
+.cart-add-button {
+  margin-bottom: 12px;
+}
