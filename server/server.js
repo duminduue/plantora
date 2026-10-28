@@ -2,6 +2,7 @@
 const express = require('express')
 const cors = require('cors')
 const mongoose = require('mongoose')
+const path = require('path')
 const plantRoutes = require('./routes/plantRoutes')
 const authRoutes = require('./routes/authRoutes')
 const orderRoutes = require('./routes/orderRoutes')
@@ -13,6 +14,7 @@ const PORT = process.env.PORT || 5000
 
 app.use(cors())
 app.use(express.json({ limit: '10kb' }))
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 app.use('/api/plants', plantRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/orders', orderRoutes)
