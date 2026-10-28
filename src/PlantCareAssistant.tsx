@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
@@ -9,6 +8,25 @@ type Message = {
   role: 'user' | 'assistant'
   text: string
 }
+
+const QUICK_QUESTIONS = [
+  {
+    label: 'Watering',
+    question: 'How often should I water my plant, and how can I tell when it needs water?',
+  },
+  {
+    label: 'Yellow leaves',
+    question: 'My plant has yellow leaves. What could be causing this and what should I check first?',
+  },
+  {
+    label: 'Sunlight',
+    question: 'How much sunlight does my plant need, and where should I place it indoors?',
+  },
+  {
+    label: 'Root rot',
+    question: 'What are the signs of root rot, and what should I do if I suspect it?',
+  },
+]
 
 function renderInline(text: string): ReactNode[] {
   return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
@@ -64,17 +82,12 @@ export default function PlantCareAssistant() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  async function sendQuestion(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-
-    const trimmed = question.trim()
+  async function askQuestion(questionText: string) {
+    const trimmed = questionText.trim()
     if (!trimmed || loading) return
 
     setError('')
-    setMessages(current => [
-      ...current,
-      { role: 'user', text: trimmed },
-    ])
+    setMessages(current => [...current, { role: 'user', text: trimmed }])
     setQuestion('')
     setLoading(true)
 
@@ -123,6 +136,18 @@ export default function PlantCareAssistant() {
     }
   }
 
+  function sendQuestion(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    void askQuestion(question)
+  }
+
+  function clearChat() {
+    if (loading) return
+    setMessages([])
+    setQuestion('')
+    setError('')
+  }
+
   return (
     <main className="site-shell">
       <header className="site-header">
@@ -152,6 +177,38 @@ export default function PlantCareAssistant() {
           />
         </label>
 
+        <section className="plant-care-quick-section" aria-label="Quick questions">
+          <div className="plant-care-quick-heading">
+            <strong>Quick questions</strong>
+            <span>Choose a topic to ask instantly</span>
+          </div>
+          <div className="plant-care-quick-actions">
+            {QUICK_QUESTIONS.map(item => (
+              <button
+                className="plant-care-quick-button"
+                type="button"
+                key={item.label}
+                disabled={loading}
+                onClick={() => void askQuestion(item.question)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <div className="plant-care-chat-toolbar">
+          <span>Conversation</span>
+          <button
+            className="plant-care-clear-button"
+            type="button"
+            onClick={clearChat}
+            disabled={loading || messages.length === 0}
+          >
+            Clear chat
+          </button>
+        </div>
+
         <section
           className="plant-care-chat"
           aria-live="polite"
@@ -161,7 +218,7 @@ export default function PlantCareAssistant() {
             <div className="plant-care-empty">
               <span aria-hidden="true">🌱</span>
               <h2>What would you like to know?</h2>
-              <p>Try: “Why are my plant's leaves turning yellow?”</p>
+              <p>Choose a quick question above or type your own question below.</p>
             </div>
           )}
 
