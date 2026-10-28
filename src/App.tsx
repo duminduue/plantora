@@ -1611,13 +1611,6 @@ function AdminDashboardPage() {
                           <td>{formatPrice(plant.price)}</td>
                           <td><input aria-label={`${plant.name} stock`} className="admin-stock-input" type="number" min="0" max="1000000" defaultValue={plant.stock ?? 100} id={`stock-${plant._id}`} /></td>
                           <td><div className="admin-row-actions">
-                            <button className="admin-small-button" type="button" onClick={() => {
-                              const input = document.getElementById(`stock-${plant._id}`) as HTMLInputElement | null
-                              if (!input || !Number.isInteger(Number(input.value)) || Number(input.value) < 0) {
-                                setError('Stock must be a whole number greater than or equal to zero.')
-                                return
-                              }
-                              void updatePlantStock(plant, Number(input.value))
                             <input aria-label={`Restock amount for ${plant.name}`} className="admin-stock-input admin-restock-input" type="number" min="1" max="1000000" placeholder="+ Qty" value={restockAmounts[plant._id] ?? ''} onChange={(event) => setRestockAmounts((current) => ({ ...current, [plant._id]: event.target.value }))} />
                             <button className="admin-small-button" type="button" onClick={() => void restockPlant(plant)}>Restock</button>
                             <button className="admin-small-button" type="button" onClick={() => startEditingPlant(plant)}>{editingPlantId === plant._id ? 'Editing…' : 'Edit'}</button>
