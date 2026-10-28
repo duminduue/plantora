@@ -492,40 +492,40 @@ function HomePage() {
                   aria-label={`View details for ${plant.name}`}
                 >
                   <PlantImage plant={plant} />
-
                   <div className="plant-card-content">
                     <p className="plant-category">
                       {plant.category} plant
                     </p>
-
                     <h3>{plant.name}</h3>
-
                     <p className="plant-description">
                       {plant.description}
                     </p>
-
-                    <div className="plant-card-bottom">
-                      <div>
-                        <span className="price-label">PRICE</span>
-                        <p className="plant-price">
-                          {formatPrice(plant.price)}
-                        </p>
-                      </div>
-
-                      <span className="plant-arrow" aria-hidden="true">
-                        ↗
-                      </span>
-                    </div>
                   </div>
                 </Link>
-                <button
-                  className="cart-add-button"
-                  type="button"
-                  onClick={() => addToCart(plant)}
-                  aria-label={`Add ${plant.name} to cart`}
-                >
-                  Add to cart
-                </button>
+
+                <div className="plant-card-footer">
+                  <div className="plant-card-price">
+                    <span className="price-label">PRICE</span>
+                    <p className="plant-price">{formatPrice(plant.price)}</p>
+                  </div>
+                  <div className="plant-card-actions">
+                    <Link
+                      className="plant-view-button"
+                      to={`/plants/${plant._id}`}
+                      aria-label={`View ${plant.name} details`}
+                    >
+                      View details <span aria-hidden="true">↗</span>
+                    </Link>
+                    <button
+                      className="cart-add-button"
+                      type="button"
+                      onClick={() => addToCart(plant)}
+                      aria-label={`Add ${plant.name} to cart`}
+                    >
+                      Add to cart
+                    </button>
+                  </div>
+                </div>
               </article>
             ))}
           </div>
