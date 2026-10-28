@@ -817,6 +817,7 @@ type AuthPageProps = {
 
 function AuthPage({ mode }: AuthPageProps) {
   const navigate = useNavigate()
+  const location = useLocation()
   const isRegister = mode === 'register'
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -847,7 +848,8 @@ function AuthPage({ mode }: AuthPageProps) {
       localStorage.setItem('plantorai_token', result.token)
       localStorage.setItem('plantorai_user', JSON.stringify(result.user))
       setSuccess(isRegister ? 'Account created successfully. Redirecting…' : 'Login successful. Redirecting…')
-      navigate('/', { replace: true })
+      const returnTo = (location.state as { from?: string } | null)?.from
+      navigate(returnTo || '/', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
     } finally {
