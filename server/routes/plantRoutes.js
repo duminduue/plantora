@@ -2,6 +2,7 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const Plant = require('../models/Plant')
+const { authenticate, authorize } = require('../middleware/auth')
 
 const router = express.Router()
 
@@ -9,7 +10,7 @@ const router = express.Router()
 router.get('/', async (req, res) => {
   try {
     const { search, category, minPrice, maxPrice } = req.query
-    const filter = {}
+    const filter = { isActive: { $ne: false }, moderationStatus: 'Approved' }
 
     // Reject repeated or non-string query parameters instead of crashing on .trim().
     const queryValues = { search, category, minPrice, maxPrice }
@@ -102,7 +103,7 @@ router.get('/:id', async (req, res) => {
       })
     }
 
-    const plant = await Plant.findById(req.params.id)
+    const plant = await Plant.findOne({ _id: req.params.id, isActive: { $ne: false }, moderationStatus: 'Approved' })
 
     if (!plant) {
       return res.status(404).json({
@@ -121,59 +122,6 @@ router.get('/:id', async (req, res) => {
   }
 })
 
-
-/* PATCH one plant by ID */
-router.patch('/:id', async (req, res) => {
-  try {
-    if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid plant ID',
-      })
-    }
-
-    const allowedFields = ['imageUrl']
-    const updates = {}
-
-    for (const field of allowedFields) {
-      if (req.body[field] !== undefined) {
-        updates[field] = req.body[field]
-      }
-    }
-
-    if (Object.keys(updates).length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'No supported fields provided',
-      })
-    }
-
-    const plant = await Plant.findByIdAndUpdate(
-      req.params.id,
-      { $set: updates },
-      { new: true, runValidators: true }
-    )
-
-    if (!plant) {
-      return res.status(404).json({
-        success: false,
-        message: 'Plant not found',
-      })
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Plant updated successfully',
-      data: plant,
-    })
-  } catch (error) {
-    console.error('Update plant error:', error.message)
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update plant',
-    })
-  }
-})
 
 
 module.exports = router
