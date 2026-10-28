@@ -277,6 +277,101 @@ describe('PlantorAI API', () => {
     expect(saleMovement.stockAfter).toBe(8)
   })
 
+  it('POST /api/orders should combine duplicate plant IDs before calculating totals and reserving stock', async () => {
+    const plant = await Plant.create({
+      name: 'Duplicate Cart Item Test Plant',
+      category: 'Test',
+      price: 400,
+      description: 'Temporary plant for duplicate cart line testing',
+      stock: 5,
+    })
+    testPlantIds.push(plant._id)
+    const email = `duplicate-cart-${Date.now()}@example.com`
+    testEmails.push(email)
+
+    const response = await request(app)
+      .post('/api/orders')
+      .set('Authorization', `Bearer ${orderAuthToken}`)
+      .send({
+        customerName: 'Duplicate Cart Customer',
+        email,
+        phone: '0771234567',
+        address: '123 Green Street, Colombo',
+        items: [
+          { plantId: plant._id.toString(), quantity: 1 },
+          { plantId: plant._id.toString(), quantity: 2 },
+        ],
+      })
+
+    expect(response.status).toBe(201)
+    expect(response.body.data.items).toHaveLength(1)
+    expect(response.body.data.items[0].quantity).toBe(3)
+    expect(response.body.data.subtotal).toBe(1200)
+
+    const updatedPlant = await Plant.findById(plant._id)
+    expect(updatedPlant.stock).toBe(2)
+  })
+
+  it('POST /api/orders should reject a plant ID that does not exist without changing inventory', async () => {
+    const missingPlantId = new mongoose.Types.ObjectId().toString()
+    const email = `missing-plant-${Date.now()}@example.com`
+    testEmails.push(email)
+
+    const response = await request(app)
+      .post('/api/orders')
+      .set('Authorization', `Bearer ${orderAuthToken}`)
+      .send({
+        customerName: 'Missing Plant Customer',
+        email,
+        phone: '0771234567',
+        address: '123 Green Street, Colombo',
+        items: [{ plantId: missingPlantId, quantity: 1 }],
+      })
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+    expect(response.body.message).toContain('plants are unavailable')
+    expect(await Order.findOne({ email })).toBeNull()
+  })
+
+  it('admin restock should reject invalid quantities without changing stock', async () => {
+    const adminEmail = `admin-restock-invalid-${Date.now()}@example.com`
+    testEmails.push(adminEmail)
+    const admin = await User.create({
+      name: 'Invalid Restock Admin',
+      email: adminEmail,
+      passwordHash: 'test-only-hash',
+      role: 'admin',
+    })
+    const token = jwt.sign(
+      { sub: admin._id.toString(), role: 'admin' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h', issuer: 'plantorai-api', audience: 'plantorai-client' }
+    )
+    const plant = await Plant.create({
+      name: 'Invalid Restock Test Plant',
+      category: 'Test',
+      price: 500,
+      description: 'Temporary plant for invalid restock tests',
+      stock: 7,
+    })
+    testPlantIds.push(plant._id)
+
+    for (const quantity of [0, -1, 1.5, '5']) {
+      const response = await request(app)
+        .post(`/api/admin/plants/${plant._id}/restock`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ quantity })
+
+      expect(response.status).toBe(400)
+      expect(response.body.success).toBe(false)
+    }
+
+    const unchangedPlant = await Plant.findById(plant._id)
+    expect(unchangedPlant.stock).toBe(7)
+    expect(await StockMovement.findOne({ plant: plant._id, type: 'Restock' })).toBeNull()
+  })
+
   it('POST /api/orders should reject invalid checkout details', async () => {
     const response = await request(app).post('/api/orders').set('Authorization', `Bearer ${orderAuthToken}`).send({
       customerName: 'A',
