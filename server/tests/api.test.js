@@ -417,6 +417,44 @@ describe('PlantorAI API', () => {
     expect(customerDenied.status).toBe(403)
   })
 
+  it('seller orders should expose only the seller items and seller subtotal, not customer contact details', async () => {
+    const seller = await User.create({ name: 'Order Seller', email: `order-seller-${Date.now()}@example.com`, passwordHash: 'test-only-hash', role: 'seller' })
+    testEmails.push(seller.email)
+    const otherSeller = await User.create({ name: 'Other Order Seller', email: `other-order-seller-${Date.now()}@example.com`, passwordHash: 'test-only-hash', role: 'seller' })
+    testEmails.push(otherSeller.email)
+    const makeToken = (user) => jwt.sign({ sub: user._id.toString(), role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h', issuer: 'plantorai-api', audience: 'plantorai-client' })
+    const sellerPlant = await Plant.create({ seller: seller._id, name: 'Seller Order Plant', category: 'Test', price: 100, stock: 5, description: 'A plant owned by this seller for an order privacy test.' })
+    const otherPlant = await Plant.create({ seller: otherSeller._id, name: 'Other Seller Plant', category: 'Test', price: 900, stock: 5, description: 'A plant owned by another seller for an order privacy test.' })
+    testPlantIds.push(sellerPlant._id, otherPlant._id)
+    const customerEmail = `private-customer-${Date.now()}@example.com`
+    testEmails.push(customerEmail)
+    await Order.create({
+      orderNumber: `PA-SELLER-PRIVACY-${Date.now()}`,
+      customerName: 'Private Customer',
+      email: customerEmail,
+      phone: '0771234567',
+      address: '123 Private Street, Colombo',
+      items: [
+        { plant: sellerPlant._id, name: sellerPlant.name, unitPrice: 100, quantity: 2 },
+        { plant: otherPlant._id, name: otherPlant.name, unitPrice: 900, quantity: 1 },
+      ],
+      subtotal: 1100,
+      status: 'Pending',
+    })
+
+    const response = await request(app).get('/api/seller/orders').set('Authorization', `Bearer ${makeToken(seller)}`)
+    expect(response.status).toBe(200)
+    expect(response.body.data).toHaveLength(1)
+    expect(response.body.data[0].items).toHaveLength(1)
+    expect(response.body.data[0].items[0].name).toBe('Seller Order Plant')
+    expect(response.body.data[0].sellerSubtotal).toBe(200)
+    expect(response.body.data[0]).not.toHaveProperty('email')
+    expect(response.body.data[0]).not.toHaveProperty('phone')
+    expect(response.body.data[0]).not.toHaveProperty('address')
+    expect(response.body.data[0]).not.toHaveProperty('customerName')
+    expect(response.body.data[0].subtotal).toBeUndefined()
+  })
+
   it('admin user management should list users and update a role', async () => {
     const user = await User.create({ name: 'Promoted Test Customer', email: `promote-${Date.now()}@example.com`, passwordHash: 'test-only-hash', role: 'customer' })
     testEmails.push(user.email)
