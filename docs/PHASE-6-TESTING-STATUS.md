@@ -1,13 +1,13 @@
 # Phase 6 — Testing and Reliability Status
 
-**Status:** In progress. The project owner reports 51 backend tests passing, a successful frontend production build, and a lint run with zero errors. Additional regression and workflow checks remain before Phase 6 can be marked complete.
+**Status:** In progress. The project owner reports 52 backend tests passing, a successful frontend production build, and a lint run with zero errors. Additional regression and workflow checks remain before Phase 6 can be marked complete.
 
 ## Verification evidence
 
 The following results were reported by the project owner from the local checkout on 28 October 2026. They have not been independently executed by this document's author.
 
 - Backend test command: run from the `server` directory with `npm test`.
-- Backend automated tests: **51 passed** (latest owner-reported run).
+- Backend automated tests: **52 passed** (latest owner-reported run).
 - Test files: `server/tests/api.test.js` and `server/tests/plantCare.test.js`.
 - Earlier run before the latest additions: 46 passed across 2 files.
 - Frontend production build: the owner reported a successful `npm run build` from the project root.
@@ -19,11 +19,13 @@ The following results were reported by the project owner from the local checkout
 
 The existing tests cover plant listing and filters, invalid and nonexistent plant IDs, empty search results, order validation and creation, stock availability, authentication and JWT validation, customer/admin authorization, seller ownership isolation, seller order privacy, admin user management, and stock movement records.
 
+An additional checkout consistency test verifies that an order exceeding available stock is rejected and leaves the plant stock unchanged, with no order or sale stock-movement record created. The project owner reports that the updated suite passes with 52 tests.
+
 ### `server/tests/plantCare.test.js`
 
 The AI endpoint tests cover empty and over-length questions, missing Gemini API configuration, successful provider responses, provider quota errors, rate limiting, over-length plant names, invalid provider credentials, provider responses with no usable answer, network failures, and timeout handling.
 
-The five additional AI failure/validation tests were committed in GitHub commit `a32a8b3`. The project owner reports that the updated suite passes with 51 tests.
+The five additional AI failure/validation tests were committed in GitHub commit `a32a8b3`.
 
 ## Lint warnings observed
 
@@ -50,4 +52,4 @@ The root `package.json` has no `test` script, so running `npm test` at the proje
 
 ## Completion decision
 
-Phase 6 is **not yet complete**. The latest owner-reported backend test run passes 51 tests, and the owner previously reported a successful frontend build. Further regression checks and review of remaining workflow coverage are still needed before declaring the phase complete.
+Phase 6 is **not yet complete**. The latest owner-reported backend test run passes 52 tests, and the owner previously reported a successful frontend build. Further regression checks and review of remaining workflow coverage are still needed before declaring the phase complete.
