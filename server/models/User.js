@@ -42,4 +42,5 @@ userSchema.methods.comparePassword = function comparePassword(password) {
   return bcrypt.compare(password, this.passwordHash)
 }
 
-module.exports = mongoose.model('User', userSchema)
+// Reuse the model if it has already been compiled (e.g. by the test runner).
+module.exports = mongoose.models.User || mongoose.model('User', userSchema)
