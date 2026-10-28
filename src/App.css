@@ -1940,3 +1940,40 @@ select:focus-visible {
     font-size: 10px;
   }
 }
+
+
+/* Keep every product card the same height in each grid row */
+.plant-grid {
+  align-items: stretch;
+}
+
+.plant-card {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+}
+
+.plant-card-link {
+  display: flex;
+  height: auto;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.plant-card-content {
+  flex: 1 1 auto;
+}
+
+.plant-description {
+  min-height: 3.3em;
+}
+
+.plant-card-footer {
+  margin-top: auto;
+}
+
+@media (max-width: 650px) {
+  .plant-description {
+    min-height: 0;
+  }
+}
