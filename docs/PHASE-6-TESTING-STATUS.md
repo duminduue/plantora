@@ -1,6 +1,6 @@
 # Phase 6 — Testing and Reliability Status
 
-**Status:** In progress. The project owner reports 55 backend tests passing after the latest checkout/restock test additions. After lint cleanup changes, the owner reports zero lint errors and two remaining React `set-state-in-effect` warnings in Admin and Seller dashboard loading effects. The frontend production build was reported successful before those latest lint cleanup changes and should be rerun. Additional regression and workflow checks remain before Phase 6 can be marked complete.
+**Status:** Testing checklist completed by the project owner; final sign-off is pending review of documented limitations. The owner reports a successful production build, 55 backend tests passing, lint with 0 errors and 2 remaining React `set-state-in-effect` warnings in Admin and Seller dashboard loading effects, and all 7 manual regression workflows passing. The warnings are documented and are not lint errors.
 
 ## Verification evidence
 
@@ -13,6 +13,7 @@ The following results were reported by the project owner from the local checkout
 - Frontend production build: the owner reported a successful `npm run build` from the project root.
 - Frontend lint, initial run: `npm run lint` completed with **0 errors and 10 warnings**.
 - Frontend lint, after cleanup: the owner reports **0 errors and 2 warnings**. Both remaining warnings concern Admin/Seller dashboard loading effects calling async functions that update state. These are retained pending a behavior-safe fix rather than silenced.
+- Final verification update (owner-reported): production build successful; backend tests **55 passed**; all **7/7 manual regression workflows passed** (login/register/logout, marketplace, cart, checkout, seller dashboard, admin dashboard, and Plant Care AI).
 
 ## Existing test coverage reviewed
 
@@ -47,8 +48,8 @@ The root `package.json` has no `test` script, so running `npm test` at the proje
 
 - Review remaining coverage gaps and add targeted tests only where needed.
 - Review seller/admin restrictions and order/stock consistency for uncovered cases.
-- Rerun the production build after the latest React lint cleanup changes.
-- Fix or explicitly accept the two remaining lint warnings only after reviewing their impact; rerun lint and tests after changes.
+- Review the two remaining lint warnings and fix them only if a behavior-safe change is clear; do not suppress them just to obtain a zero-warning lint run.
+- Optional additional assurance: test role-boundary and failure/edge cases not covered by the seven reported manual workflows.
 - Perform regression checks on authentication, marketplace browsing, checkout, seller/admin workflows, and AI plant-care.
 - Record exact results and known limitations after the remaining checks are run.
 
