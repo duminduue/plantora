@@ -8,6 +8,9 @@ import {
 } from 'vitest'
 import request from 'supertest'
 import mongoose from 'mongoose'
+import express from 'express'
+import jwt from 'jsonwebtoken'
+import { authorize } from '../middleware/auth.js'
 import User from '../models/User.js'
 import serverModule from '../server.js'
 
@@ -299,6 +302,78 @@ describe('PlantorAI API', () => {
     expect(response.status).toBe(200)
     expect(response.body.user.email).toBe(email)
     expect(response.body.user.role).toBe('customer')
+  })
+
+
+  it('GET /api/auth/me should reject an expired JWT', async () => {
+    const expiredToken = jwt.sign(
+      { sub: new mongoose.Types.ObjectId().toString(), role: 'customer' },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: -1,
+        issuer: 'plantorai-api',
+        audience: 'plantorai-client',
+      }
+    )
+
+    const response = await request(app)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${expiredToken}`)
+
+    expect(response.status).toBe(401)
+    expect(response.body.message).toBe('Invalid or expired token')
+  })
+
+  it('role authorization should deny customers access to admin-only routes', async () => {
+    const roleApp = express()
+    roleApp.get(
+      '/admin-only',
+      (req, res, next) => {
+        req.user = { id: 'test-user', role: req.header('x-test-role') }
+        next()
+      },
+      authorize('admin'),
+      (req, res) => res.status(200).json({ success: true })
+    )
+
+    const response = await request(roleApp)
+      .get('/admin-only')
+      .set('x-test-role', 'customer')
+
+    expect(response.status).toBe(403)
+    expect(response.body.success).toBe(false)
+  })
+
+  it('role authorization should allow admins to access admin-only routes', async () => {
+    const roleApp = express()
+    roleApp.get(
+      '/admin-only',
+      (req, res, next) => {
+        req.user = { id: 'test-admin', role: req.header('x-test-role') }
+        next()
+      },
+      authorize('admin'),
+      (req, res) => res.status(200).json({ success: true })
+    )
+
+    const response = await request(roleApp)
+      .get('/admin-only')
+      .set('x-test-role', 'admin')
+
+    expect(response.status).toBe(200)
+    expect(response.body.success).toBe(true)
+  })
+
+  it('role authorization should reject requests without an authenticated user', async () => {
+    const roleApp = express()
+    roleApp.get('/admin-only', authorize('admin'), (req, res) => {
+      res.status(200).json({ success: true })
+    })
+
+    const response = await request(roleApp).get('/admin-only')
+
+    expect(response.status).toBe(401)
+    expect(response.body.success).toBe(false)
   })
 
 })
