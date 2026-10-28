@@ -2,7 +2,6 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const Plant = require('../models/Plant')
-const { authenticate, authorize } = require('../middleware/auth')
 
 const router = express.Router()
 
