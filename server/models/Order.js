@@ -15,6 +15,7 @@ const orderSchema = new mongoose.Schema(
     orderNumber: { type: String, required: true, unique: true, index: true },
     customerName: { type: String, required: true, trim: true, minlength: 2, maxlength: 80 },
     email: { type: String, required: true, trim: true, lowercase: true, maxlength: 254 },
+    phone: { type: String, required: true, trim: true, maxlength: 20 },
     address: { type: String, required: true, trim: true, minlength: 8, maxlength: 500 },
     items: {
       type: [orderItemSchema],
