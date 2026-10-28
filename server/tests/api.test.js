@@ -18,6 +18,7 @@ import serverModule from '../server.js'
 
 const { app } = serverModule
 const testEmails = []
+const testPlantIds = []
 
 describe('PlantorAI API', () => {
   beforeAll(async () => {
@@ -37,6 +38,9 @@ describe('PlantorAI API', () => {
     if (mongoose.connection.readyState === 1 && testEmails.length) {
       await User.deleteMany({ email: { $in: testEmails } })
       await Order.deleteMany({ email: { $in: testEmails } })
+    }
+    if (mongoose.connection.readyState === 1 && testPlantIds.length) {
+      await Plant.deleteMany({ _id: { $in: testPlantIds } })
     }
     if (mongoose.connection.readyState !== 0) {
       await mongoose.disconnect()
@@ -209,8 +213,14 @@ describe('PlantorAI API', () => {
 
 
   it('POST /api/orders should validate prices and persist an order as Pending', async () => {
-    const plant = await Plant.findOne()
-    expect(plant).toBeTruthy()
+    const plant = await Plant.create({
+      name: 'Checkout Test Plant',
+      category: 'Test',
+      price: 1250,
+      description: 'Temporary plant used by an API test',
+      stock: 10,
+    })
+    testPlantIds.push(plant._id)
     const email = `order-test-${Date.now()}@example.com`
     testEmails.push(email)
     const response = await request(app).post('/api/orders').send({
@@ -226,6 +236,8 @@ describe('PlantorAI API', () => {
     expect(response.body.data.orderNumber).toMatch(/^PA-/)
     expect(response.body.data.status).toBe('Pending')
     expect(response.body.data.subtotal).toBe(plant.price * 2)
+    const updatedPlant = await Plant.findById(plant._id)
+    expect(updatedPlant.stock).toBe(8)
     const savedOrder = await Order.findOne({ orderNumber: response.body.data.orderNumber })
     expect(savedOrder).toBeTruthy()
     expect(savedOrder.email).toBe(email)
