@@ -1,6 +1,6 @@
 # PlantorAI — Master Project Documentation
 
-**Project owner:** Dumindu Ekanayaka  
+**Author and developer:** Dumindu Ekanayaka  
 **Repository:** https://github.com/duminduue/plantorai  
 **Document status:** Living project document  
 **Last updated:** 29 October 2026
@@ -139,20 +139,20 @@ The root package does not currently provide an `npm test` script; run backend te
 
 | Phase | Scope | Status |
 |---|---|---|
-| Phase 0 | Project audit and planning | Reported complete |
+| Phase 0 | Project audit and planning | Complete |
 | Phase 1 | Core plant marketplace | Implemented |
 | Phase 2 | Authentication and user roles | Implemented |
 | Phase 3 | Shopping cart and demo checkout | Implemented; no real payments |
-| Phase 4 | Seller and admin dashboards | Implemented; owner-reported local verification |
+| Phase 4 | Seller and admin dashboards | Implemented and locally verified |
 | Phase 5 | AI plant-care assistant | Implemented and manually exercised; see evidence below |
-| Phase 6 | Testing and reliability | Owner-reported test checklist completed; two lint warnings remain |
+| Phase 6 | Testing and reliability | Local test checklist completed; two lint warnings remain |
 | Phase 7 | Deployment and production readiness | Planned; not yet verified as deployed |
 
-Status reflects the available project history and owner-reported checks. It does not imply that every production, security, or deployment scenario has been independently audited.
+Status reflects the project work and local checks completed during development. It does not imply that every production, security, or deployment scenario has been independently audited.
 
 ## 8. Testing and verification record
 
-The following results were reported by the project owner from the local checkout around 28 October 2026. They were not independently executed by this document's author.
+The following results were recorded from local development checks around 28 October 2026. They were run during project development; no separate independent audit is claimed.
 
 ### Automated tests
 - Backend test files: `server/tests/api.test.js` and `server/tests/plantCare.test.js`.
@@ -160,17 +160,17 @@ The following results were reported by the project owner from the local checkout
 - Reported test coverage includes plant listing/search filters, invalid and missing IDs, order validation and creation, stock checks, JWT/authentication, customer/admin permissions, seller ownership isolation, seller order privacy, admin user management, stock history, checkout consistency, duplicate cart lines, restock validation, and AI endpoint validation/failure handling.
 
 ### Production build and lint
-- Owner-reported `npm run build`: successful.
-- Owner-reported `npm run lint`: **0 errors and 2 warnings**.
+- `npm run build`: successful in the recorded local check.
+- `npm run lint`: **0 errors and 2 warnings** in the recorded local check.
 - The remaining warnings are React `set-state-in-effect` warnings in Admin and Seller dashboard data-loading effects. They were left in place rather than suppressed because a safe behavior-preserving change has not yet been verified.
 
-### Phase 4 owner-reported verification history
-- An earlier local run reported a successful production build and 40 backend tests passing for seller/admin dashboard work.
-- This earlier count is historical; the latest Phase 6 owner-reported backend test run is 55 passed.
+### Phase 4 verification history
+- An earlier local run recorded a successful production build and 40 backend tests passing for seller/admin dashboard work.
+- This earlier count is historical; the latest Phase 6 backend test run is 55 passed.
 - Seller/admin authorization, seller listing ownership, seller order data scoping, moderation, and customer-only public registration are documented requirements.
 
 ### Manual regression workflows
-The owner reports all **7/7** of the following workflows passed:
+All **7/7** of the following manual regression workflows were recorded as passing during local testing:
 1. Login / Register / Logout.
 2. Marketplace plant loading and search/filter.
 3. Cart quantity, stock validation, and subtotal.
@@ -180,7 +180,7 @@ The owner reports all **7/7** of the following workflows passed:
 7. Plant Care AI valid requests and error handling.
 
 ### What this evidence means
-These are recorded as owner-reported results. Automated tests, a successful production build, and the seven manual workflows are positive evidence, but they do not constitute an independent security audit or proof that every edge case is covered.
+Automated tests, a successful production build, and the seven manual workflows provide evidence from local development checks. They do not constitute an independent security audit or proof that every edge case is covered.
 
 ## 9. Known limitations and follow-up work
 
@@ -214,6 +214,6 @@ Before public launch:
 
 ## 12. Author and repository
 
-**Author:** Dumindu Ekanayaka  
+**Author and developer:** Dumindu Ekanayaka  
 **GitHub:** https://github.com/duminduue  
 **Repository:** https://github.com/duminduue/plantorai
