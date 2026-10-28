@@ -1343,6 +1343,23 @@ function AdminDashboardPage() {
     sunlight: '',
     stock: '0',
   })
+  const [inventorySearch, setInventorySearch] = useState('')
+  const [inventoryCategory, setInventoryCategory] = useState('')
+  const [restockAmounts, setRestockAmounts] = useState<Record<string, string>>({})
+  const [orderSearch, setOrderSearch] = useState('')
+  const [orderStatusFilter, setOrderStatusFilter] = useState('')
+
+  const filteredPlants = plants.filter((plant) => {
+    const query = inventorySearch.trim().toLowerCase()
+    const matchesQuery = !query || [plant.name, plant.category, plant.description].some((value) => value?.toLowerCase().includes(query))
+    return matchesQuery && (!inventoryCategory || plant.category === inventoryCategory)
+  })
+  const inventoryCategories = [...new Set(plants.map((plant) => plant.category))].sort()
+  const filteredOrders = orders.filter((order) => {
+    const query = orderSearch.trim().toLowerCase()
+    const matchesQuery = !query || [order.orderNumber, order.customerName, order.email, order.phone].some((value) => value?.toLowerCase().includes(query))
+    return matchesQuery && (!orderStatusFilter || order.status === orderStatusFilter)
+  })
 
   const adminApiUrl = API_URL.replace(/\/api\/plants\/?$/, '/api/admin')
 
@@ -1434,10 +1451,31 @@ function AdminDashboardPage() {
         method: 'PATCH',
         body: JSON.stringify({ stock: nextStock }),
       })
-      setMessage(`${plant.name} stock updated.`)
+      setMessage(`${plant.name} stock updated and saved to the database.`)
       await loadDashboard()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to update stock.')
+    }
+  }
+
+  async function restockPlant(plant: Plant) {
+    const amount = Number(restockAmounts[plant._id] || 0)
+    if (!Number.isInteger(amount) || amount < 1) {
+      setError('Enter a whole-number restock amount greater than zero.')
+      return
+    }
+    setError('')
+    setMessage('')
+    try {
+      await adminFetch(`/plants/${plant._id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ stock: (plant.stock ?? 100) + amount }),
+      })
+      setRestockAmounts((current) => ({ ...current, [plant._id]: '' }))
+      setMessage(`${plant.name}: added ${amount} to stock. New stock saved to the database.`)
+      await loadDashboard()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to restock plant.')
     }
   }
 
@@ -1558,11 +1596,15 @@ function AdminDashboardPage() {
 
             <section className="admin-section">
               <h2>Plant inventory</h2>
-              {plants.length === 0 ? <p>No plants found.</p> : (
+              <div className="admin-inventory-filters">
+                <label className="auth-field">Search inventory<input type="search" placeholder="Plant name, category, description..." value={inventorySearch} onChange={(event) => setInventorySearch(event.target.value)} /></label>
+                <label className="auth-field">Filter category<select value={inventoryCategory} onChange={(event) => setInventoryCategory(event.target.value)}><option value="">All categories</option>{inventoryCategories.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+              </div>
+              {plants.length === 0 ? <p>No plants found.</p> : filteredPlants.length === 0 ? <p>No plants match your search/filter.</p> : (
                 <div className="admin-table-wrap">
                   <table className="admin-table">
                     <thead><tr><th>Plant</th><th>Price</th><th>Available stock</th><th>Actions</th></tr></thead>
-                    <tbody>{plants.map((plant) => (
+                    <tbody>{filteredPlants.map((plant) => (
                       <Fragment key={plant._id}>
                         <tr>
                           <td><strong>{plant.name}</strong><small>{plant.category}</small></td>
@@ -1576,7 +1618,9 @@ function AdminDashboardPage() {
                                 return
                               }
                               void updatePlantStock(plant, Number(input.value))
-                            }}>Save stock</button>
+                            }}>Set stock</button>
+                            <input aria-label={`Restock amount for ${plant.name}`} className="admin-stock-input admin-restock-input" type="number" min="1" max="1000000" placeholder="+ Qty" value={restockAmounts[plant._id] ?? ''} onChange={(event) => setRestockAmounts((current) => ({ ...current, [plant._id]: event.target.value }))} />
+                            <button className="admin-small-button" type="button" onClick={() => void restockPlant(plant)}>Restock</button>
                             <button className="admin-small-button" type="button" onClick={() => startEditingPlant(plant)}>{editingPlantId === plant._id ? 'Editing…' : 'Edit'}</button>
                             <button className="admin-small-button admin-delete-button" type="button" onClick={() => void deletePlant(plant)}>Delete</button>
                           </div></td>
@@ -1609,11 +1653,15 @@ function AdminDashboardPage() {
 
             <section className="admin-section">
               <h2>Customer orders</h2>
-              {orders.length === 0 ? <p>No orders have been placed yet.</p> : (
+              <div className="admin-inventory-filters">
+                <label className="auth-field">Search orders<input type="search" placeholder="Order number, customer, email, phone..." value={orderSearch} onChange={(event) => setOrderSearch(event.target.value)} /></label>
+                <label className="auth-field">Filter status<select value={orderStatusFilter} onChange={(event) => setOrderStatusFilter(event.target.value)}><option value="">All statuses</option><option>Pending</option><option>Processing</option><option>Completed</option><option>Cancelled</option></select></label>
+              </div>
+              {orders.length === 0 ? <p>No orders have been placed yet.</p> : filteredOrders.length === 0 ? <p>No orders match your search/filter.</p> : (
                 <div className="admin-table-wrap">
                   <table className="admin-table">
                     <thead><tr><th>Order</th><th>Customer</th><th>Items / total</th><th>Status</th></tr></thead>
-                    <tbody>{orders.map((order) => (
+                    <tbody>{filteredOrders.map((order) => (
                       <tr key={order._id}>
                         <td><strong>{order.orderNumber}</strong><small>{new Date(order.createdAt).toLocaleString()}</small></td>
                         <td>{order.customerName}<small>{order.email}</small><small>{order.phone}</small></td>
