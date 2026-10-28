@@ -55,9 +55,11 @@ Public registration should create customer accounts only. Seller/admin roles mus
 - Checkout is not connected to a real payment gateway.
 
 ### Seller and admin dashboards
-- Sellers manage their own plant listings, stock, and relevant orders.
-- Admins manage catalogue/inventory, orders, user roles and account status, and plant-listing moderation.
+- Sellers can view their own listings, create plant listings (which enter moderation as pending/inactive), edit plant details/prices, update stock, deactivate listings, and view orders containing their products.
+- Seller order responses are scoped to relevant items and seller-specific subtotals rather than exposing the full order subtotal and unrelated customer/order details.
+- Admins can manage users, account active status and roles, review pending plant listings, approve or reject listings, view marketplace summary information, and manage catalogue inventory and orders.
 - Admin restocking validates quantities and records stock movements.
+- Public catalogue results exclude inactive or unapproved listings while supporting legacy records without a moderation status.
 
 ### AI Plant-Care Assistant
 - UI route: `/plant-care`.
@@ -162,6 +164,11 @@ The following results were reported by the project owner from the local checkout
 - Owner-reported `npm run lint`: **0 errors and 2 warnings**.
 - The remaining warnings are React `set-state-in-effect` warnings in Admin and Seller dashboard data-loading effects. They were left in place rather than suppressed because a safe behavior-preserving change has not yet been verified.
 
+### Phase 4 owner-reported verification history
+- An earlier local run reported a successful production build and 40 backend tests passing for seller/admin dashboard work.
+- This earlier count is historical; the latest Phase 6 owner-reported backend test run is 55 passed.
+- Seller/admin authorization, seller listing ownership, seller order data scoping, moderation, and customer-only public registration are documented requirements.
+
 ### Manual regression workflows
 The owner reports all **7/7** of the following workflows passed:
 1. Login / Register / Logout.
@@ -181,7 +188,7 @@ These are recorded as owner-reported results. Automated tests, a successful prod
 - Add targeted tests if further uncovered role-boundary, failure, or concurrency cases are identified.
 - The checkout is a demo flow and does not process real payments.
 - AI rate limiting is in-memory and does not coordinate between multiple backend instances.
-- AI advice can be incorrect; no image-based diagnosis, voice interface, IoT control, custom-trained model, or persistent conversation history is claimed.
+- AI advice can be incorrect; no image-based diagnosis, voice interface, IoT control, custom-trained model, or persistent conversation history is claimed. The MVP intentionally excludes photo-based diagnosis, voice chat, conversation history, autonomous watering/IoT, subscriptions/billing, and custom model training.
 - Phase 7 production deployment, environment configuration, live database connectivity, security settings, and live-site smoke tests remain to be planned and verified.
 
 ## 10. Security checklist
