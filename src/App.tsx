@@ -196,6 +196,7 @@ function SiteHeader() {
         </a>
 
         <Link to="/recommendations">Recommendations</Link>
+        <Link to="/plant-care">Plant Care AI</Link>
 
         <a
           href="/#about"
