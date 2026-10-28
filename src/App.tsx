@@ -69,6 +69,18 @@ function PlantImage({
 function SiteHeader() {
   const location = useLocation()
   const navigate = useNavigate()
+  const [signedIn, setSignedIn] = useState(() => Boolean(localStorage.getItem('plantorai_token')))
+
+  useEffect(() => {
+    setSignedIn(Boolean(localStorage.getItem('plantorai_token')))
+  }, [location.pathname])
+
+  function handleLogout() {
+    localStorage.removeItem('plantorai_token')
+    localStorage.removeItem('plantorai_user')
+    setSignedIn(false)
+    navigate('/')
+  }
 
   function navigateToSection(sectionId: string) {
     if (location.pathname !== '/') {
@@ -136,16 +148,18 @@ function SiteHeader() {
         </a>
       </nav>
 
-      <a
-        className="header-button"
-        href="/#plants"
-        onClick={(event) => {
-          event.preventDefault()
-          navigateToSection('plants')
-        }}
-      >
-        Explore plants <span>↗</span>
-      </a>
+      <div className="header-actions">
+        {signedIn ? (
+          <button className="auth-nav-button" type="button" onClick={handleLogout}>
+            Log out
+          </button>
+        ) : (
+          <>
+            <Link className="auth-nav-link" to="/login">Log in</Link>
+            <Link className="header-button" to="/register">Sign up</Link>
+          </>
+        )}
+      </div>
     </header>
   )
 }
@@ -719,6 +733,143 @@ function PlantDetailsPage() {
   )
 }
 
+
+/* -------------------- Authentication Pages -------------------- */
+
+type AuthPageProps = {
+  mode: 'login' | 'register'
+}
+
+function AuthPage({ mode }: AuthPageProps) {
+  const navigate = useNavigate()
+  const isRegister = mode === 'register'
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setLoading(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      const authApiUrl = API_URL.replace(/\/api\/plants\/?$/, '/api/auth')
+      const response = await fetch(`${authApiUrl}/${isRegister ? 'register' : 'login'}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(isRegister ? { name, email, password } : { email, password }),
+      })
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || (isRegister ? 'Could not create your account.' : 'Could not log in.'))
+      }
+
+      localStorage.setItem('plantorai_token', result.token)
+      localStorage.setItem('plantorai_user', JSON.stringify(result.user))
+      setSuccess(isRegister ? 'Account created successfully. Redirecting…' : 'Login successful. Redirecting…')
+      navigate('/', { replace: true })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <main className="site-shell auth-page">
+      <SiteHeader />
+      <section className="auth-layout">
+        <div className="auth-intro">
+          <p className="eyebrow">WELCOME TO PLANTORAI</p>
+          <h1>{isRegister ? 'Make room for nature.' : 'Welcome back.'}</h1>
+          <p>
+            {isRegister
+              ? 'Create an account to begin your PlantorAI journey.'
+              : 'Log in to continue your plant discovery journey.'}
+          </p>
+          <div className="auth-leaf" aria-hidden="true">🌿</div>
+        </div>
+
+        <form className="auth-card" onSubmit={handleSubmit}>
+          <p className="eyebrow">{isRegister ? 'CREATE YOUR ACCOUNT' : 'YOUR ACCOUNT'}</p>
+          <h2>{isRegister ? 'Sign up' : 'Log in'}</h2>
+          <p className="auth-card-description">
+            {isRegister ? 'It only takes a moment to get started.' : 'Enter your details to access your account.'}
+          </p>
+
+          {isRegister && (
+            <label className="auth-field">
+              Full name
+              <input
+                type="text"
+                autoComplete="name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                minLength={2}
+                maxLength={80}
+                required
+              />
+            </label>
+          )}
+
+          <label className="auth-field">
+            Email address
+            <input
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              maxLength={254}
+              required
+            />
+          </label>
+
+          <label className="auth-field">
+            Password
+            <input
+              type="password"
+              autoComplete={isRegister ? 'new-password' : 'current-password'}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              minLength={isRegister ? 8 : undefined}
+              maxLength={72}
+              required
+            />
+            {isRegister && <span className="auth-hint">Use at least 8 characters.</span>}
+          </label>
+
+          {error && <p className="auth-message auth-error" role="alert">{error}</p>}
+          {success && <p className="auth-message auth-success" role="status">{success}</p>}
+
+          <button className="primary-button auth-submit" type="submit" disabled={loading}>
+            {loading ? 'Please wait…' : isRegister ? 'Create account' : 'Log in'}
+          </button>
+
+          <p className="auth-switch">
+            {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
+            <Link to={isRegister ? '/login' : '/register'}>
+              {isRegister ? 'Log in' : 'Sign up'}
+            </Link>
+          </p>
+          <p className="auth-security-note">
+            New public accounts are created with the customer role.
+          </p>
+        </form>
+      </section>
+      <footer className="site-footer">
+        <Link className="brand" to="/">plantorai<span>.</span></Link>
+        <p>Make room for nature.</p>
+        <span>Plant marketplace · V1</span>
+      </footer>
+    </main>
+  )
+}
+
 /* -------------------- Not Found Page -------------------- */
 
 function NotFoundPage() {
@@ -746,6 +897,8 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/plants/:id" element={<PlantDetailsPage />} />
+        <Route path="/login" element={<AuthPage mode="login" />} />
+        <Route path="/register" element={<AuthPage mode="register" />} />
         <Route
           path="/recommendations"
           element={<RecommendationsPage />}
