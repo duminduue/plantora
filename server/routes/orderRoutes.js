@@ -12,6 +12,9 @@ function validEmail(email) {
 }
 
 router.post('/', async (req, res) => {
+  const reservedStock = []
+  let orderCreated = false
+
   try {
     const body = req.body || {}
     const { customerName, email, phone, address, items } = body
@@ -53,16 +56,48 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ success: false, message: 'One or more plants are unavailable' })
     }
 
+    // Older plant documents may not have a stock field yet. Initialize them
+    // with the model's legacy-safe default before applying atomic reservations.
+    await Plant.updateMany(
+      { _id: { $in: plantIds }, stock: { $exists: false } },
+      { $set: { stock: 100 } }
+    )
+
     const byId = new Map(plants.map((plant) => [plant._id.toString(), plant]))
-    const orderItems = plantIds.map((plantId) => {
+    const orderItems = []
+
+    // Reserve inventory atomically so concurrent checkouts cannot oversell.
+    for (const plantId of plantIds) {
+      const quantity = requested.get(plantId)
+      const reservedPlant = await Plant.findOneAndUpdate(
+        { _id: plantId, stock: { $gte: quantity } },
+        { $inc: { stock: -quantity } },
+        { new: true }
+      )
+
+      if (!reservedPlant) {
+        for (const reservation of reservedStock) {
+          await Plant.updateOne(
+            { _id: reservation.plantId },
+            { $inc: { stock: reservation.quantity } }
+          )
+        }
+        reservedStock.length = 0
+        return res.status(409).json({
+          success: false,
+          message: 'Not enough stock available for one or more plants',
+        })
+      }
+
+      reservedStock.push({ plantId, quantity })
       const plant = byId.get(plantId)
-      return {
+      orderItems.push({
         plant: plant._id,
         name: plant.name,
         unitPrice: plant.price,
-        quantity: requested.get(plantId),
-      }
-    })
+        quantity,
+      })
+    }
     const subtotal = orderItems.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
     const orderNumber = `PA-${Date.now().toString().slice(-8)}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
 
@@ -76,6 +111,8 @@ router.post('/', async (req, res) => {
       subtotal,
       status: 'Pending',
     })
+    orderCreated = true
+    reservedStock.length = 0
 
     return res.status(201).json({
       success: true,
@@ -83,6 +120,18 @@ router.post('/', async (req, res) => {
       data: order,
     })
   } catch (error) {
+    if (!orderCreated && reservedStock.length) {
+      for (const reservation of reservedStock) {
+        try {
+          await Plant.updateOne(
+            { _id: reservation.plantId },
+            { $inc: { stock: reservation.quantity } }
+          )
+        } catch (rollbackError) {
+          console.error('Stock rollback error:', rollbackError.message)
+        }
+      }
+    }
     console.error('Create order error:', error.message)
     return res.status(500).json({ success: false, message: 'Unable to place order' })
   }
