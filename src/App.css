@@ -2195,3 +2195,7 @@ select:focus-visible {
     width: 100%;
   }
 }
+
+
+/* Seller dashboard layout */
+.seller-dashboard-placeholder { margin-top: 24px; }
