@@ -1333,6 +1333,16 @@ function AdminDashboardPage() {
   const [description, setDescription] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [sunlight, setSunlight] = useState('Indirect light')
+  const [editingPlantId, setEditingPlantId] = useState('')
+  const [editDraft, setEditDraft] = useState({
+    name: '',
+    category: '',
+    price: '',
+    description: '',
+    imageUrl: '',
+    sunlight: '',
+    stock: '0',
+  })
 
   const adminApiUrl = API_URL.replace(/\/api\/plants\/?$/, '/api/admin')
 
@@ -1431,6 +1441,48 @@ function AdminDashboardPage() {
     }
   }
 
+  function startEditingPlant(plant: Plant) {
+    setError('')
+    setMessage('')
+    setEditingPlantId(plant._id)
+    setEditDraft({
+      name: plant.name,
+      category: plant.category,
+      price: String(plant.price),
+      description: plant.description || '',
+      imageUrl: plant.imageUrl || '',
+      sunlight: plant.sunlight || '',
+      stock: String(plant.stock ?? 100),
+    })
+  }
+
+  async function savePlantChanges(plant: Plant) {
+    setError('')
+    setMessage('')
+    setSaving(true)
+    try {
+      await adminFetch(`/plants/${plant._id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name: editDraft.name.trim(),
+          category: editDraft.category.trim(),
+          price: Number(editDraft.price),
+          description: editDraft.description.trim(),
+          imageUrl: editDraft.imageUrl.trim(),
+          sunlight: editDraft.sunlight.trim(),
+          stock: Number(editDraft.stock),
+        }),
+      })
+      setEditingPlantId('')
+      setMessage(`${editDraft.name.trim()} saved successfully. Changes are now stored in the database.`)
+      await loadDashboard()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to save plant changes.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   async function deletePlant(plant: Plant) {
     if (!window.confirm(`Delete ${plant.name}? This cannot be undone.`)) return
     setError('')
@@ -1511,22 +1563,44 @@ function AdminDashboardPage() {
                   <table className="admin-table">
                     <thead><tr><th>Plant</th><th>Price</th><th>Available stock</th><th>Actions</th></tr></thead>
                     <tbody>{plants.map((plant) => (
-                      <tr key={plant._id}>
-                        <td><strong>{plant.name}</strong><small>{plant.category}</small></td>
-                        <td>{formatPrice(plant.price)}</td>
-                        <td><input aria-label={`${plant.name} stock`} className="admin-stock-input" type="number" min="0" max="1000000" defaultValue={plant.stock ?? 100} id={`stock-${plant._id}`} /></td>
-                        <td><div className="admin-row-actions">
-                          <button className="admin-small-button" type="button" onClick={() => {
-                            const input = document.getElementById(`stock-${plant._id}`) as HTMLInputElement | null
-                            if (!input || !Number.isInteger(Number(input.value)) || Number(input.value) < 0) {
-                              setError('Stock must be a whole number greater than or equal to zero.')
-                              return
-                            }
-                            void updatePlantStock(plant, Number(input.value))
-                          }}>Save stock</button>
-                          <button className="admin-small-button admin-delete-button" type="button" onClick={() => void deletePlant(plant)}>Delete</button>
-                        </div></td>
-                      </tr>
+                      <>
+                        <tr key={plant._id}>
+                          <td><strong>{plant.name}</strong><small>{plant.category}</small></td>
+                          <td>{formatPrice(plant.price)}</td>
+                          <td><input aria-label={`${plant.name} stock`} className="admin-stock-input" type="number" min="0" max="1000000" defaultValue={plant.stock ?? 100} id={`stock-${plant._id}`} /></td>
+                          <td><div className="admin-row-actions">
+                            <button className="admin-small-button" type="button" onClick={() => {
+                              const input = document.getElementById(`stock-${plant._id}`) as HTMLInputElement | null
+                              if (!input || !Number.isInteger(Number(input.value)) || Number(input.value) < 0) {
+                                setError('Stock must be a whole number greater than or equal to zero.')
+                                return
+                              }
+                              void updatePlantStock(plant, Number(input.value))
+                            }}>Save stock</button>
+                            <button className="admin-small-button" type="button" onClick={() => startEditingPlant(plant)}>{editingPlantId === plant._id ? 'Editing…' : 'Edit'}</button>
+                            <button className="admin-small-button admin-delete-button" type="button" onClick={() => void deletePlant(plant)}>Delete</button>
+                          </div></td>
+                        </tr>
+                        {editingPlantId === plant._id && (
+                          <tr key={`${plant._id}-edit`}>
+                            <td colSpan={4}>
+                              <form className="admin-plant-form" onSubmit={(event) => { event.preventDefault(); void savePlantChanges(plant) }}>
+                                <label className="auth-field">Plant name<input value={editDraft.name} onChange={(event) => setEditDraft({ ...editDraft, name: event.target.value })} minLength={2} maxLength={100} required /></label>
+                                <label className="auth-field">Category<input value={editDraft.category} onChange={(event) => setEditDraft({ ...editDraft, category: event.target.value })} minLength={2} maxLength={60} required /></label>
+                                <label className="auth-field">Price (LKR)<input type="number" value={editDraft.price} onChange={(event) => setEditDraft({ ...editDraft, price: event.target.value })} min="0" step="0.01" required /></label>
+                                <label className="auth-field">Available stock<input type="number" value={editDraft.stock} onChange={(event) => setEditDraft({ ...editDraft, stock: event.target.value })} min="0" max="1000000" step="1" required /></label>
+                                <label className="auth-field admin-wide-field">Description<textarea value={editDraft.description} onChange={(event) => setEditDraft({ ...editDraft, description: event.target.value })} minLength={5} maxLength={2000} rows={3} required /></label>
+                                <label className="auth-field admin-wide-field">Image URL (optional)<input type="url" value={editDraft.imageUrl} onChange={(event) => setEditDraft({ ...editDraft, imageUrl: event.target.value })} maxLength={2000} /></label>
+                                <label className="auth-field">Sunlight<input value={editDraft.sunlight} onChange={(event) => setEditDraft({ ...editDraft, sunlight: event.target.value })} maxLength={100} /></label>
+                                <div className="admin-row-actions admin-wide-field">
+                                  <button className="primary-button" type="submit" disabled={saving}>{saving ? 'Saving changes…' : 'Save changes'}</button>
+                                  <button className="admin-small-button" type="button" onClick={() => setEditingPlantId('')}>Cancel</button>
+                                </div>
+                              </form>
+                            </td>
+                          </tr>
+                        )}
+                      </>
                     ))}</tbody>
                   </table>
                 </div>
