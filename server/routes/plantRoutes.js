@@ -10,7 +10,7 @@ const router = express.Router()
 router.get('/', async (req, res) => {
   try {
     const { search, category, minPrice, maxPrice } = req.query
-    const filter = { isActive: { $ne: false }, moderationStatus: 'Approved' }
+    const filter = { isActive: { $ne: false }, $or: [{ moderationStatus: 'Approved' }, { moderationStatus: { $exists: false } }] }
 
     // Reject repeated or non-string query parameters instead of crashing on .trim().
     const queryValues = { search, category, minPrice, maxPrice }
@@ -103,7 +103,7 @@ router.get('/:id', async (req, res) => {
       })
     }
 
-    const plant = await Plant.findOne({ _id: req.params.id, isActive: { $ne: false }, moderationStatus: 'Approved' })
+    const plant = await Plant.findOne({ _id: req.params.id, isActive: { $ne: false }, $or: [{ moderationStatus: 'Approved' }, { moderationStatus: { $exists: false } }] })
 
     if (!plant) {
       return res.status(404).json({
