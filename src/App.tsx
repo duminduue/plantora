@@ -360,7 +360,7 @@ function HomePage() {
             </p>
           </div>
 
-          <span className="catalogue-label">PLANTORA COLLECTION</span>
+          <span className="catalogue-label">PLANTORAI COLLECTION</span>
         </div>
 
         <div className="filter-panel">
@@ -536,7 +536,7 @@ function HomePage() {
       <section className="about-section" id="about">
         <div className="about-inner">
           <div className="about-heading">
-            <p className="eyebrow">ABOUT PLANTORA</p>
+            <p className="eyebrow">ABOUT PLANTORAI</p>
 
             <h2>
               A little more green,
@@ -624,7 +624,7 @@ function HomePage() {
         </Link>
 
         <p>Make room for nature.</p>
-        <span>Plant marketplace · V1</span>
+        <span>Plant marketplace</span>
       </footer>
     </main>
   )
@@ -924,7 +924,7 @@ function AuthPage({ mode }: AuthPageProps) {
       <footer className="site-footer">
         <Link className="brand" to="/">plantorai<span>.</span></Link>
         <p>Make room for nature.</p>
-        <span>Plant marketplace · V1</span>
+        <span>Plant marketplace</span>
       </footer>
     </main>
   )
@@ -1036,7 +1036,7 @@ function ProtectedAccountPage() {
       <footer className="site-footer">
         <Link className="brand" to="/">plantorai<span>.</span></Link>
         <p>Make room for nature.</p>
-        <span>Plant marketplace · V1</span>
+        <span>Plant marketplace</span>
       </footer>
     </main>
   )
@@ -1187,7 +1187,7 @@ function CartPage() {
       <footer className="site-footer">
         <Link className="brand" to="/">plantorai<span>.</span></Link>
         <p>Make room for nature.</p>
-        <span>Plant marketplace · V1</span>
+        <span>Plant marketplace</span>
       </footer>
     </main>
   )
