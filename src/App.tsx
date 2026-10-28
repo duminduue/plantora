@@ -1279,6 +1279,278 @@ function CartPage() {
   )
 }
 
+
+/* -------------------- Admin Dashboard -------------------- */
+
+type AdminSummary = {
+  plantCount: number
+  orderCount: number
+  customerCount: number
+  pendingOrders: number
+  lowStockCount: number
+  recentOrders: AdminOrder[]
+}
+
+type AdminOrder = {
+  _id: string
+  orderNumber: string
+  customerName: string
+  email: string
+  phone: string
+  subtotal: number
+  status: 'Pending' | 'Processing' | 'Completed' | 'Cancelled'
+  createdAt: string
+  items: Array<{ name: string; quantity: number; unitPrice: number }>
+}
+
+function AdminDashboardPage() {
+  const navigate = useNavigate()
+  const [summary, setSummary] = useState<AdminSummary | null>(null)
+  const [plants, setPlants] = useState<Plant[]>([])
+  const [orders, setOrders] = useState<AdminOrder[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [name, setName] = useState('')
+  const [category, setCategory] = useState('Indoor')
+  const [price, setPrice] = useState('')
+  const [stock, setStock] = useState('10')
+  const [description, setDescription] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+  const [sunlight, setSunlight] = useState('Indirect light')
+
+  const adminApiUrl = API_URL.replace(/\/api\/plants\/?$/, '/api/admin')
+
+  async function adminFetch(path: string, init: RequestInit = {}) {
+    const token = localStorage.getItem('plantorai_token')
+    if (!token) {
+      navigate('/login', { replace: true, state: { from: '/admin' } })
+      throw new Error('Please log in with an administrator account.')
+    }
+    const response = await fetch(`${adminApiUrl}${path}`, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        ...(init.headers || {}),
+      },
+    })
+    const result = await response.json()
+    if (response.status === 401) {
+      navigate('/login', { replace: true, state: { from: '/admin' } })
+      throw new Error('Your session expired. Please log in again.')
+    }
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || 'Admin request failed.')
+    }
+    return result
+  }
+
+  async function loadDashboard() {
+    setLoading(true)
+    setError('')
+    try {
+      const [dashboardResult, plantsResult, ordersResult] = await Promise.all([
+        adminFetch('/dashboard'),
+        adminFetch('/plants'),
+        adminFetch('/orders'),
+      ])
+      setSummary(dashboardResult.data as AdminSummary)
+      setPlants(plantsResult.data as Plant[])
+      setOrders(ordersResult.data as AdminOrder[])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to load admin dashboard.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    void loadDashboard()
+  }, [])
+
+  async function createPlant(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError('')
+    setMessage('')
+    setSaving(true)
+    try {
+      await adminFetch('/plants', {
+        method: 'POST',
+        body: JSON.stringify({
+          name,
+          category,
+          price: Number(price),
+          stock: Number(stock),
+          description,
+          imageUrl,
+          sunlight,
+        }),
+      })
+      setName('')
+      setPrice('')
+      setStock('10')
+      setDescription('')
+      setImageUrl('')
+      setMessage('Plant added successfully.')
+      await loadDashboard()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to add plant.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function updatePlantStock(plant: Plant, nextStock: number) {
+    setError('')
+    setMessage('')
+    try {
+      await adminFetch(`/plants/${plant._id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ stock: nextStock }),
+      })
+      setMessage(`${plant.name} stock updated.`)
+      await loadDashboard()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to update stock.')
+    }
+  }
+
+  async function deletePlant(plant: Plant) {
+    if (!window.confirm(`Delete ${plant.name}? This cannot be undone.`)) return
+    setError('')
+    setMessage('')
+    try {
+      await adminFetch(`/plants/${plant._id}`, { method: 'DELETE' })
+      setMessage(`${plant.name} deleted.`)
+      await loadDashboard()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to delete plant.')
+    }
+  }
+
+  async function updateOrderStatus(orderId: string, status: AdminOrder['status']) {
+    setError('')
+    setMessage('')
+    try {
+      await adminFetch(`/orders/${orderId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      })
+      setMessage('Order status updated.')
+      await loadDashboard()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to update order status.')
+    }
+  }
+
+  return (
+    <main className="site-shell auth-page">
+      <SiteHeader />
+      <section className="admin-page">
+        <p className="eyebrow">PLANTORAI MANAGEMENT</p>
+        <h1>Admin dashboard</h1>
+        <p className="section-description">Manage plant listings, inventory and customer orders.</p>
+
+        {loading ? (
+          <div className="status-panel" role="status"><span className="loader" /><p>Loading admin dashboard…</p></div>
+        ) : error && !summary ? (
+          <div className="status-panel error-panel" role="alert">
+            <h2>Admin access unavailable</h2>
+            <p>{error}</p>
+            <p>Only an account with the admin role can access this dashboard.</p>
+            <button className="primary-button" type="button" onClick={() => void loadDashboard()}>Try again</button>
+          </div>
+        ) : (
+          <>
+            {error && <p className="auth-message auth-error" role="alert">{error}</p>}
+            {message && <p className="auth-message auth-success" role="status">{message}</p>}
+            {summary && (
+              <div className="admin-stats-grid">
+                <article className="admin-stat"><span>Total plants</span><strong>{summary.plantCount}</strong></article>
+                <article className="admin-stat"><span>Total orders</span><strong>{summary.orderCount}</strong></article>
+                <article className="admin-stat"><span>Customers</span><strong>{summary.customerCount}</strong></article>
+                <article className="admin-stat"><span>Pending orders</span><strong>{summary.pendingOrders}</strong></article>
+                <article className="admin-stat"><span>Low stock (5 or less)</span><strong>{summary.lowStockCount}</strong></article>
+              </div>
+            )}
+
+            <section className="admin-section">
+              <h2>Add a plant</h2>
+              <form className="admin-plant-form" onSubmit={createPlant}>
+                <label className="auth-field">Plant name<input value={name} onChange={(e) => setName(e.target.value)} minLength={2} maxLength={100} required /></label>
+                <label className="auth-field">Category<input value={category} onChange={(e) => setCategory(e.target.value)} minLength={2} maxLength={60} required /></label>
+                <label className="auth-field">Price (LKR)<input type="number" value={price} onChange={(e) => setPrice(e.target.value)} min="0" step="0.01" required /></label>
+                <label className="auth-field">Initial stock<input type="number" value={stock} onChange={(e) => setStock(e.target.value)} min="0" max="1000000" step="1" required /></label>
+                <label className="auth-field admin-wide-field">Description<textarea value={description} onChange={(e) => setDescription(e.target.value)} minLength={5} maxLength={2000} rows={3} required /></label>
+                <label className="auth-field admin-wide-field">Image URL (optional)<input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} maxLength={2000} /></label>
+                <label className="auth-field">Sunlight<input value={sunlight} onChange={(e) => setSunlight(e.target.value)} maxLength={100} /></label>
+                <button className="primary-button admin-form-submit" type="submit" disabled={saving}>{saving ? 'Saving…' : 'Add plant'}</button>
+              </form>
+            </section>
+
+            <section className="admin-section">
+              <h2>Plant inventory</h2>
+              {plants.length === 0 ? <p>No plants found.</p> : (
+                <div className="admin-table-wrap">
+                  <table className="admin-table">
+                    <thead><tr><th>Plant</th><th>Price</th><th>Available stock</th><th>Actions</th></tr></thead>
+                    <tbody>{plants.map((plant) => (
+                      <tr key={plant._id}>
+                        <td><strong>{plant.name}</strong><small>{plant.category}</small></td>
+                        <td>{formatPrice(plant.price)}</td>
+                        <td><input aria-label={`${plant.name} stock`} className="admin-stock-input" type="number" min="0" max="1000000" defaultValue={plant.stock ?? 100} id={`stock-${plant._id}`} /></td>
+                        <td><div className="admin-row-actions">
+                          <button className="admin-small-button" type="button" onClick={() => {
+                            const input = document.getElementById(`stock-${plant._id}`) as HTMLInputElement | null
+                            if (!input || !Number.isInteger(Number(input.value)) || Number(input.value) < 0) {
+                              setError('Stock must be a whole number greater than or equal to zero.')
+                              return
+                            }
+                            void updatePlantStock(plant, Number(input.value))
+                          }}>Save stock</button>
+                          <button className="admin-small-button admin-delete-button" type="button" onClick={() => void deletePlant(plant)}>Delete</button>
+                        </div></td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+
+            <section className="admin-section">
+              <h2>Customer orders</h2>
+              {orders.length === 0 ? <p>No orders have been placed yet.</p> : (
+                <div className="admin-table-wrap">
+                  <table className="admin-table">
+                    <thead><tr><th>Order</th><th>Customer</th><th>Items / total</th><th>Status</th></tr></thead>
+                    <tbody>{orders.map((order) => (
+                      <tr key={order._id}>
+                        <td><strong>{order.orderNumber}</strong><small>{new Date(order.createdAt).toLocaleString()}</small></td>
+                        <td>{order.customerName}<small>{order.email}</small><small>{order.phone}</small></td>
+                        <td>{order.items.reduce((sum, item) => sum + item.quantity, 0)} items<small>{formatPrice(order.subtotal)}</small></td>
+                        <td><select aria-label={`Status for ${order.orderNumber}`} value={order.status} onChange={(e) => void updateOrderStatus(order._id, e.target.value as AdminOrder['status'])}>
+                          <option>Pending</option><option>Processing</option><option>Completed</option><option>Cancelled</option>
+                        </select></td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          </>
+        )}
+      </section>
+      <footer className="site-footer">
+        <Link className="brand" to="/">plantorai<span>.</span></Link>
+        <p>Make room for nature.</p>
+        <span>Admin tools</span>
+      </footer>
+    </main>
+  )
+}
+
 /* -------------------- Not Found Page -------------------- */
 
 function NotFoundPage() {
@@ -1309,6 +1581,7 @@ function App() {
         <Route path="/login" element={<AuthPage mode="login" />} />
         <Route path="/register" element={<AuthPage mode="register" />} />
         <Route path="/account" element={<ProtectedAccountPage />} />
+        <Route path="/admin" element={<AdminDashboardPage />} />
         <Route path="/cart" element={<CartPage />} />
         <Route
           path="/recommendations"
