@@ -90,7 +90,7 @@ router.post('/', async (req, res) => {
         })
       }
 
-      reservedStock.push({ plantId, quantity })
+      reservedStock.push({ plantId, quantity, stockAfter: reservedPlant.stock })
       const plant = byId.get(plantId)
       orderItems.push({
         plant: plant._id,
@@ -117,8 +117,8 @@ router.post('/', async (req, res) => {
 
     try {
       await StockMovement.insertMany(orderItems.map((item) => {
-        const plant = byId.get(item.plant.toString())
-        const stockAfter = plant.stock - item.quantity
+        const reservation = reservedStock.find((entry) => entry.plantId === item.plant.toString())
+        const stockAfter = reservation.stockAfter
         return {
           plant: item.plant,
           plantName: item.name,
