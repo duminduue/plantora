@@ -227,6 +227,18 @@ describe('PlantorAI API', () => {
   })
 
 
+  it('POST /api/orders should reject guests without a valid login token', async () => {
+    const response = await request(app).post('/api/orders').send({
+      customerName: 'Guest Customer',
+      email: 'guest@example.com',
+      phone: '0771234567',
+      address: '123 Green Street, Colombo',
+      items: [{ plantId: new mongoose.Types.ObjectId().toString(), quantity: 1 }],
+    })
+    expect(response.status).toBe(401)
+    expect(response.body.success).toBe(false)
+  })
+
   it('POST /api/orders should validate prices and persist an order as Pending', async () => {
     const plant = await Plant.create({
       name: 'Checkout Test Plant',
