@@ -1618,7 +1618,6 @@ function AdminDashboardPage() {
                                 return
                               }
                               void updatePlantStock(plant, Number(input.value))
-                            }}>Set stock</button>
                             <input aria-label={`Restock amount for ${plant.name}`} className="admin-stock-input admin-restock-input" type="number" min="1" max="1000000" placeholder="+ Qty" value={restockAmounts[plant._id] ?? ''} onChange={(event) => setRestockAmounts((current) => ({ ...current, [plant._id]: event.target.value }))} />
                             <button className="admin-small-button" type="button" onClick={() => void restockPlant(plant)}>Restock</button>
                             <button className="admin-small-button" type="button" onClick={() => startEditingPlant(plant)}>{editingPlantId === plant._id ? 'Editing…' : 'Edit'}</button>
