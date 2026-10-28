@@ -216,6 +216,7 @@ describe('PlantorAI API', () => {
     const response = await request(app).post('/api/orders').send({
       customerName: 'Order Test Customer',
       email,
+      phone: '0771234567',
       address: '123 Green Street, Colombo',
       items: [{ plantId: plant._id.toString(), quantity: 2 }],
     })
@@ -228,12 +229,14 @@ describe('PlantorAI API', () => {
     const savedOrder = await Order.findOne({ orderNumber: response.body.data.orderNumber })
     expect(savedOrder).toBeTruthy()
     expect(savedOrder.email).toBe(email)
+    expect(savedOrder.phone).toBe('0771234567')
   })
 
   it('POST /api/orders should reject invalid checkout details', async () => {
     const response = await request(app).post('/api/orders').send({
       customerName: 'A',
       email: 'invalid-email',
+      phone: '123',
       address: 'short',
       items: [],
     })
@@ -246,6 +249,7 @@ describe('PlantorAI API', () => {
     const base = {
       customerName: 'Order Test Customer',
       email: 'order-validation@example.com',
+      phone: '0771234567',
       address: '123 Green Street, Colombo',
     }
     const badId = await request(app).post('/api/orders').send({
