@@ -1,6 +1,6 @@
 // src/App.tsx
 
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useCallback, useEffect, useState } from 'react'
 import {
   BrowserRouter,
   Link,
@@ -100,28 +100,13 @@ function PlantImage({
 function SiteHeader() {
   const location = useLocation()
   const navigate = useNavigate()
-  const [signedIn, setSignedIn] = useState(() => Boolean(localStorage.getItem('plantorai_token')))
-  const [userRole, setUserRole] = useState(() => {
+  const signedIn = Boolean(localStorage.getItem('plantorai_token'))
+  const storedUserRole = (() => {
     try { return JSON.parse(localStorage.getItem('plantorai_user') || 'null')?.role || 'customer' } catch { return 'customer' }
-  })
-  const [isAdmin, setIsAdmin] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('plantorai_user') || 'null')?.role === 'admin'
-    } catch {
-      return false
-    }
-  })
+  })()
+  const userRole = storedUserRole
+  const isAdmin = storedUserRole === 'admin'
   const [cartCount, setCartCount] = useState(() => readCart().reduce((sum, item) => sum + item.quantity, 0))
-
-  useEffect(() => {
-    setSignedIn(Boolean(localStorage.getItem('plantorai_token')))
-    try { setUserRole(JSON.parse(localStorage.getItem('plantorai_user') || 'null')?.role || 'customer') } catch { setUserRole('customer') }
-    try {
-      setIsAdmin(JSON.parse(localStorage.getItem('plantorai_user') || 'null')?.role === 'admin')
-    } catch {
-      setIsAdmin(false)
-    }
-  }, [location.pathname])
 
   useEffect(() => {
     const updateCartCount = () => setCartCount(readCart().reduce((sum, item) => sum + item.quantity, 0))
@@ -136,9 +121,6 @@ function SiteHeader() {
   function handleLogout() {
     localStorage.removeItem('plantorai_token')
     localStorage.removeItem('plantorai_user')
-    setSignedIn(false)
-    setIsAdmin(false)
-    setUserRole('customer')
     navigate('/')
   }
 
@@ -1133,7 +1115,7 @@ function CartPage() {
     return () => {
       cancelled = true
     }
-  }, [cart.map((item) => item.plant._id).join('|')])
+  }, [cart])
 
   const unavailableItems = cart.filter((item) => {
     const stock = stockById[item.plant._id]
@@ -1411,7 +1393,7 @@ function AdminDashboardPage() {
 
   const adminApiUrl = API_URL.replace(/\/api\/plants\/?$/, '/api/admin')
 
-  async function adminFetch(path: string, init: RequestInit = {}) {
+  const adminFetch = useCallback(async (path: string, init: RequestInit = {}) => {
     const token = localStorage.getItem('plantorai_token')
     if (!token) {
       navigate('/login', { replace: true, state: { from: '/admin' } })
@@ -1434,11 +1416,9 @@ function AdminDashboardPage() {
       throw new Error(result.message || 'Admin request failed.')
     }
     return result
-  }
+  }, [adminApiUrl, navigate])
 
-  async function loadDashboard() {
-    setLoading(true)
-    setError('')
+  const loadDashboard = useCallback(async () => {
     try {
       const [dashboardResult, plantsResult, ordersResult, historyResult, usersResult, moderationResult] = await Promise.all([
         adminFetch('/dashboard'),
@@ -1459,11 +1439,11 @@ function AdminDashboardPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [adminFetch])
 
   useEffect(() => {
     void loadDashboard()
-  }, [])
+  }, [loadDashboard])
 
   async function uploadPlantImage(file: File): Promise<string> {
     const formData = new FormData()
@@ -1861,7 +1841,7 @@ function SellerDashboardPage() {
   const [draft, setDraft] = useState({ name: '', category: '', price: '', stock: '0', description: '', imageUrl: '', sunlight: '' })
   const token = () => localStorage.getItem('plantorai_token') || ''
 
-  async function sellerFetch(path: string, init: RequestInit = {}) {
+  const sellerFetch = useCallback(async (path: string, init: RequestInit = {}) => {
     const response = await fetch(`${API_URL.replace(/\/api\/plants\/?$/, '/api/seller')}${path}`, {
       ...init,
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}`, ...(init.headers || {}) },
@@ -1869,9 +1849,8 @@ function SellerDashboardPage() {
     const result = await response.json()
     if (!response.ok || !result.success) throw new Error(result.message || 'Seller request failed.')
     return result
-  }
-  async function load() {
-    setLoading(true); setError('')
+  }, [])
+  const load = useCallback(async () => {
     try {
       const [plantResult, orderResult] = await Promise.all([sellerFetch('/plants'), sellerFetch('/orders')])
       setPlants(plantResult.data); setOrders(orderResult.data)
@@ -1880,8 +1859,8 @@ function SellerDashboardPage() {
       setError(msg)
       if (!localStorage.getItem('plantorai_token') || msg.includes('permission')) navigate('/login', { state: { from: '/seller' } })
     } finally { setLoading(false) }
-  }
-  useEffect(() => { void load() }, [])
+  }, [navigate, sellerFetch])
+  useEffect(() => { void load() }, [load])
   async function createListing(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setSaving(true); setError(''); setMessage('')
     try {
