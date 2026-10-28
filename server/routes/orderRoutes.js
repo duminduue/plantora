@@ -14,13 +14,16 @@ function validEmail(email) {
 router.post('/', async (req, res) => {
   try {
     const body = req.body || {}
-    const { customerName, email, address, items } = body
+    const { customerName, email, phone, address, items } = body
 
     if (typeof customerName !== 'string' || customerName.trim().length < 2 || customerName.trim().length > 80) {
       return res.status(400).json({ success: false, message: 'Name must be between 2 and 80 characters' })
     }
     if (!validEmail(email)) {
       return res.status(400).json({ success: false, message: 'Enter a valid email address' })
+    }
+    if (typeof phone !== 'string' || !/^[+()\d\s-]{9,20}$/.test(phone.trim()) || phone.replace(/\D/g, '').length < 9 || phone.replace(/\D/g, '').length > 15) {
+      return res.status(400).json({ success: false, message: 'Enter a valid phone number (9 to 15 digits)' })
     }
     if (typeof address !== 'string' || address.trim().length < 8 || address.trim().length > 500) {
       return res.status(400).json({ success: false, message: 'Address must be between 8 and 500 characters' })
@@ -67,6 +70,7 @@ router.post('/', async (req, res) => {
       orderNumber,
       customerName: customerName.trim(),
       email: email.trim().toLowerCase(),
+      phone: phone.trim(),
       address: address.trim(),
       items: orderItems,
       subtotal,
