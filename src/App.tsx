@@ -25,6 +25,35 @@ type Plant = {
 }
 
 
+type CartItem = {
+  plant: Plant
+  quantity: number
+}
+
+const CART_KEY = 'plantorai_cart'
+
+function readCart(): CartItem[] {
+  try {
+    const value = JSON.parse(localStorage.getItem(CART_KEY) || '[]')
+    return Array.isArray(value) ? value : []
+  } catch {
+    return []
+  }
+}
+
+function saveCart(cart: CartItem[]) {
+  localStorage.setItem(CART_KEY, JSON.stringify(cart))
+  window.dispatchEvent(new Event('plantorai-cart-updated'))
+}
+
+function addToCart(plant: Plant) {
+  const cart = readCart()
+  const existing = cart.find((item) => item.plant._id === plant._id)
+  if (existing) existing.quantity += 1
+  else cart.push({ plant, quantity: 1 })
+  saveCart(cart)
+}
+
 function formatPrice(price: number) {
   return `LKR ${price.toLocaleString('en-LK')}`
 }
@@ -70,10 +99,21 @@ function SiteHeader() {
   const location = useLocation()
   const navigate = useNavigate()
   const [signedIn, setSignedIn] = useState(() => Boolean(localStorage.getItem('plantorai_token')))
+  const [cartCount, setCartCount] = useState(() => readCart().reduce((sum, item) => sum + item.quantity, 0))
 
   useEffect(() => {
     setSignedIn(Boolean(localStorage.getItem('plantorai_token')))
   }, [location.pathname])
+
+  useEffect(() => {
+    const updateCartCount = () => setCartCount(readCart().reduce((sum, item) => sum + item.quantity, 0))
+    window.addEventListener('plantorai-cart-updated', updateCartCount)
+    window.addEventListener('storage', updateCartCount)
+    return () => {
+      window.removeEventListener('plantorai-cart-updated', updateCartCount)
+      window.removeEventListener('storage', updateCartCount)
+    }
+  }, [])
 
   function handleLogout() {
     localStorage.removeItem('plantorai_token')
@@ -149,6 +189,7 @@ function SiteHeader() {
       </nav>
 
       <div className="header-actions">
+        <Link className="auth-nav-link" to="/cart">Cart ({cartCount})</Link>
         {signedIn ? (
           <>
             <Link className="auth-nav-link" to="/account">My account</Link>
@@ -477,6 +518,14 @@ function HomePage() {
                     </div>
                   </div>
                 </Link>
+                <button
+                  className="cart-add-button"
+                  type="button"
+                  onClick={() => addToCart(plant)}
+                  aria-label={`Add ${plant.name} to cart`}
+                >
+                  Add to cart
+                </button>
               </article>
             ))}
           </div>
@@ -693,6 +742,14 @@ function PlantDetailsPage() {
               <p className="details-price">
                 {formatPrice(plant.price)}
               </p>
+
+              <button
+                className="primary-button cart-add-button details-add-button"
+                type="button"
+                onClick={() => addToCart(plant)}
+              >
+                Add to cart
+              </button>
 
               <p className="details-description">
                 {plant.description}
@@ -985,6 +1042,131 @@ function ProtectedAccountPage() {
   )
 }
 
+/* -------------------- Shopping Cart and Checkout -------------------- */
+
+function CartPage() {
+  const navigate = useNavigate()
+  const [cart, setCart] = useState<CartItem[]>(readCart)
+  const [checkoutOpen, setCheckoutOpen] = useState(false)
+  const [customerName, setCustomerName] = useState('')
+  const [email, setEmail] = useState('')
+  const [address, setAddress] = useState('')
+  const [orderNumber, setOrderNumber] = useState('')
+  const [error, setError] = useState('')
+
+  function updateCart(nextCart: CartItem[]) {
+    setCart(nextCart)
+    saveCart(nextCart)
+  }
+
+  function changeQuantity(plantId: string, quantity: number) {
+    if (quantity < 1) {
+      updateCart(cart.filter((item) => item.plant._id !== plantId))
+      return
+    }
+    updateCart(cart.map((item) => item.plant._id === plantId ? { ...item, quantity: Math.min(quantity, 99) } : item))
+  }
+
+  const total = cart.reduce((sum, item) => sum + item.plant.price * item.quantity, 0)
+
+  function placeOrder(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError('')
+    if (!cart.length) {
+      setError('Your cart is empty.')
+      return
+    }
+    // V1 demo checkout: no payment gateway or backend order persistence yet.
+    const number = `PA-${Date.now().toString().slice(-8)}`
+    setOrderNumber(number)
+    updateCart([])
+    setCheckoutOpen(false)
+  }
+
+  return (
+    <main className="site-shell auth-page">
+      <SiteHeader />
+      <section className="cart-page">
+        <p className="eyebrow">YOUR SELECTION</p>
+        <h1>Shopping cart</h1>
+        {orderNumber ? (
+          <div className="status-panel">
+            <span className="empty-icon">🌿</span>
+            <h2>Order request received</h2>
+            <p>Your demo order reference is <strong>{orderNumber}</strong>.</p>
+            <p>No payment was taken. This demo checkout does not yet save orders to the backend.</p>
+            <Link className="primary-button" to="/">Continue shopping</Link>
+          </div>
+        ) : cart.length === 0 ? (
+          <div className="status-panel">
+            <span className="empty-icon">🪴</span>
+            <h2>Your cart is empty</h2>
+            <p>Explore the collection and add a plant to get started.</p>
+            <button className="primary-button" type="button" onClick={() => navigate('/', { state: { scrollTo: 'plants' } })}>Browse plants</button>
+          </div>
+        ) : (
+          <div className="cart-layout">
+            <div className="cart-items">
+              {cart.map((item) => (
+                <article className="cart-item" key={item.plant._id}>
+                  <img src={item.plant.imageUrl} alt={item.plant.name} />
+                  <div className="cart-item-info">
+                    <h2>{item.plant.name}</h2>
+                    <p>{formatPrice(item.plant.price)} each</p>
+                    <label className="cart-quantity">
+                      Quantity
+                      <input
+                        type="number"
+                        min="1"
+                        max="99"
+                        value={item.quantity}
+                        onChange={(event) => changeQuantity(item.plant._id, Number(event.target.value))}
+                      />
+                    </label>
+                    <button className="cart-remove-button" type="button" onClick={() => updateCart(cart.filter((cartItem) => cartItem.plant._id !== item.plant._id))}>Remove</button>
+                  </div>
+                  <strong className="cart-line-total">{formatPrice(item.plant.price * item.quantity)}</strong>
+                </article>
+              ))}
+            </div>
+            <aside className="cart-summary">
+              <h2>Order summary</h2>
+              <div className="cart-summary-row"><span>Items</span><span>{cart.reduce((sum, item) => sum + item.quantity, 0)}</span></div>
+              <div className="cart-summary-row"><span>Subtotal</span><strong>{formatPrice(total)}</strong></div>
+              <p className="cart-note">Delivery charges, if applicable, will be confirmed separately.</p>
+              {error && <p className="auth-message auth-error" role="alert">{error}</p>}
+              <button className="primary-button cart-checkout-button" type="button" onClick={() => setCheckoutOpen(true)}>Proceed to checkout</button>
+            </aside>
+          </div>
+        )}
+        {checkoutOpen && cart.length > 0 && (
+          <form className="checkout-card" onSubmit={placeOrder}>
+            <h2>Checkout details</h2>
+            <p>Submit an order request. No online payment is collected in this version.</p>
+            <label className="auth-field">Full name
+              <input value={customerName} onChange={(event) => setCustomerName(event.target.value)} minLength={2} maxLength={80} required />
+            </label>
+            <label className="auth-field">Email address
+              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} maxLength={254} required />
+            </label>
+            <label className="auth-field">Delivery address
+              <textarea value={address} onChange={(event) => setAddress(event.target.value)} minLength={8} maxLength={500} required rows={3} />
+            </label>
+            <p className="cart-checkout-total">Total: {formatPrice(total)}</p>
+            <button className="primary-button auth-submit" type="submit">Place demo order</button>
+            <button className="cart-remove-button" type="button" onClick={() => setCheckoutOpen(false)}>Cancel</button>
+          </form>
+        )}
+      </section>
+      <footer className="site-footer">
+        <Link className="brand" to="/">plantorai<span>.</span></Link>
+        <p>Make room for nature.</p>
+        <span>Plant marketplace · V1</span>
+      </footer>
+    </main>
+  )
+}
+
 /* -------------------- Not Found Page -------------------- */
 
 function NotFoundPage() {
@@ -1015,6 +1197,7 @@ function App() {
         <Route path="/login" element={<AuthPage mode="login" />} />
         <Route path="/register" element={<AuthPage mode="register" />} />
         <Route path="/account" element={<ProtectedAccountPage />} />
+        <Route path="/cart" element={<CartPage />} />
         <Route
           path="/recommendations"
           element={<RecommendationsPage />}
