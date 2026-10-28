@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const Order = require('../models/Order')
 const Plant = require('../models/Plant')
 const StockMovement = require('../models/StockMovement')
+const { authenticate } = require('../middleware/auth')
 
 const router = express.Router()
 
@@ -12,7 +13,7 @@ function validEmail(email) {
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
 }
 
-router.post('/', async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   const reservedStock = []
   let orderCreated = false
 
@@ -111,6 +112,7 @@ router.post('/', async (req, res) => {
       items: orderItems,
       subtotal,
       status: 'Pending',
+      user: req.user.id,
     })
     orderCreated = true
     const completedReservations = [...reservedStock]
