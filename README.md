@@ -2,76 +2,56 @@
 
 **Discover your perfect indoor plants.**
 
-PlantorAI is a plant discovery web application designed to help users explore indoor plants, search and filter the collection, view plant details, and receive basic plant recommendations.
+PlantorAI is a plant marketplace web application for browsing plants, viewing plant details, searching and filtering the catalogue, managing a cart, placing demo orders, and supporting customer, seller, and admin workflows.
 
-## Features
+## Current features
 
-- Browse the plant catalogue
-- Search for plants
-- Filter plants by category and price
-- View individual plant details
-- Explore plant recommendations
-- Responsive homepage with an About section
-- MongoDB-backed plant data
-- Customer registration and login API with JWT authentication
-- Role-based authorization middleware for customer, seller, and admin roles
+- Browse approved and active plant listings
+- Search and filter plants by category and price
+- View plant details and basic recommendations
+- Shopping cart and checkout flow with orders stored by the backend (demo checkout; no real payment gateway)
+- Customer registration, login, and JWT authentication
+- Role-based customer, seller, and admin access
+- Seller dashboard for managing owned listings, stock, and relevant orders
+- Admin dashboard for catalogue/inventory, orders, user roles and account status, and plant-listing moderation
+- Backend checks for authentication, role permissions, seller ownership, stock availability, and order data scoping
 
-## Tech Stack
+## Tech stack
 
-**Frontend**
-- React
-- TypeScript
-- Vite
-- CSS
+**Frontend:** React, TypeScript, Vite, React Router, CSS
 
-**Backend**
-- Node.js
-- Express.js
-- MongoDB Atlas
-- Mongoose
-- bcryptjs password hashing
-- JSON Web Tokens (JWT)
+**Backend:** Node.js, Express.js, MongoDB Atlas, Mongoose, bcryptjs, JSON Web Tokens (JWT), Vitest, Supertest
 
-## Getting Started
+## Getting started
 
 ### Prerequisites
-
 - Node.js and npm
-- MongoDB Atlas account or a configured MongoDB database
+- MongoDB Atlas account or another configured MongoDB database
 
-### 1. Clone the repository
+### 1. Clone and install frontend dependencies
 
 ```bash
 git clone https://github.com/duminduue/plantora.git
 cd plantora
-```
-
-### 2. Install frontend dependencies
-
-From the project root:
-
-```bash
 npm install
 ```
 
-The frontend uses `http://localhost:5000/api/plants` by default. To override it, create a `.env` file in the project root and set:
+The frontend uses the API URL configured in `src/config`. If you need to override it, use a root `.env` file with the expected `VITE_API_URL` value. Vite variables are exposed in the client bundle; never put secrets in any `VITE_*` variable.
 
-```env
-VITE_API_URL=http://localhost:5000/api/plants
-```
-
-For deployment, set `VITE_API_URL` to the deployed backend's plant API URL in the frontend hosting environment, then rebuild/redeploy the frontend. Vite environment variables are included in the client bundle, so do not put secrets in `VITE_*` variables.
-
-### 3. Configure the backend
+### 2. Configure the backend
 
 ```bash
 cd server
 npm install
 ```
 
-Copy `.env.example` to `.env` and fill in your MongoDB connection string and a strong random `JWT_SECRET` (at least 32 characters). Keep `.env` private and never commit real credentials.
+Copy `.env.example` to `.env` and configure at least:
+- `MONGODB_URI`
+- `JWT_SECRET` (use a strong random value of at least 32 characters)
 
-### 4. Start the backend
+Keep `.env` private and never commit real credentials.
+
+### 3. Run the backend
 
 From the `server` directory:
 
@@ -79,7 +59,7 @@ From the `server` directory:
 npm run dev
 ```
 
-### 5. Start the frontend
+### 4. Run the frontend
 
 Open a second terminal in the project root:
 
@@ -87,59 +67,45 @@ Open a second terminal in the project root:
 npm run dev
 ```
 
-Open the local URL displayed by Vite in your browser.
-
-## API
-
-Base URL: `http://localhost:5000`
-
-### Plants
-
-- `GET /api/plants` — list plants with optional search and filters
-- `GET /api/plants/:id` — get one plant
-- `PATCH /api/plants/:id` — update supported plant fields (currently image URL)
-
-### Authentication
-
-- `POST /api/auth/register` — create a customer account; expects `{ "name": "Example User", "email": "user@example.com", "password": "at-least-8-characters" }`
-- `POST /api/auth/login` — sign in; expects `{ "email": "user@example.com", "password": "your-password" }`
-- `GET /api/auth/me` — return the current authenticated user; requires `Authorization: Bearer <token>`
-
-Public registration always assigns the `customer` role. Seller/admin role assignment must be performed through a separately secured administrative process; clients cannot choose a privileged role during registration. JWTs expire after 1 day. The `authenticate` and `authorize` middleware are available for protecting future endpoints.
+Open the local URL printed by Vite. The backend defaults to `http://localhost:5000`.
 
 ## Testing
 
-### Frontend production build
-
-Run from the project root:
+Frontend production build (project root):
 
 ```bash
 npm run build
 ```
 
-### Backend automated API tests
-
-Run from the `server` directory:
+Backend automated tests (inside `server`):
 
 ```bash
 npm test
 ```
 
-The existing backend API tests cover API health and catalogue retrieval, search and category filters, price validation, and plant ID handling. Authentication tests should be run after the auth API has been installed locally.
+The project owner reported that the Phase 4 frontend build succeeded and all 40 backend tests passed locally. Re-run both commands after pulling changes; these results are not a guarantee for every environment.
 
-## Project Status
+## Project roadmap
 
-The catalogue, search and filtering, plant details, basic recommendations, and responsive About section have been manually checked. Authentication endpoints and role middleware are the current Phase 2 implementation; run the backend tests and verify registration/login locally before treating this phase as complete.
+- **Phase 0 — Project Audit and Planning:** completed
+- **Phase 1 — Core Plant Marketplace:** completed
+- **Phase 2 — Authentication and User Roles:** implemented
+- **Phase 3 — Shopping Cart and Checkout:** implemented; checkout uses a demo flow and does not process real payments
+- **Phase 4 — Seller and Admin Dashboards:** implemented; owner-reported local verification is documented in [Phase 4 completion notes](docs/PHASE-4-COMPLETION.md)
+- **Phase 5 — AI Plant-Care Assistant:** planning; see [Phase 5 MVP plan](docs/PHASE-5-PLAN.md)
+- **Phase 6 — Testing and Reliability:** planned
+- **Phase 7 — Deployment and Documentation:** planned
 
-## Future Improvements
+## Phase 5 status
 
-- Production deployment
-- Automated end-to-end testing
-- Improved plant care information
-- Additional recommendation features
-- Shopping cart and checkout
-- Seller and admin dashboards
-- AI plant-care assistant
+The AI Plant-Care Assistant has **not been implemented yet**. The MVP plan intentionally excludes image diagnosis, voice, conversation history, IoT controls, and custom model training. The AI provider and API access approach must be confirmed before provider-specific code is added.
+
+## Security reminders
+
+- Public registration creates customer accounts only.
+- Seller/admin roles must be assigned through a secured administrative process.
+- Keep MongoDB and AI provider credentials on the server only.
+- Do not commit `.env` files or expose secrets in frontend configuration.
 
 ## Author
 
