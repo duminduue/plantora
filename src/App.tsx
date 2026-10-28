@@ -150,6 +150,7 @@ function SiteHeader() {
 
       <div className="header-actions">
         {signedIn ? (
+          <Link className="auth-nav-link" to="/account">My account</Link>
           <button className="auth-nav-button" type="button" onClick={handleLogout}>
             Log out
           </button>
@@ -870,6 +871,118 @@ function AuthPage({ mode }: AuthPageProps) {
   )
 }
 
+
+/* -------------------- Protected Account Page -------------------- */
+
+type AuthUser = {
+  id: string
+  name: string
+  email: string
+  role: 'customer' | 'seller' | 'admin'
+}
+
+function ProtectedAccountPage() {
+  const navigate = useNavigate()
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    async function loadCurrentUser() {
+      const token = localStorage.getItem('plantorai_token')
+      if (!token) {
+        navigate('/login', { replace: true, state: { from: '/account' } })
+        return
+      }
+
+      try {
+        const authApiUrl = API_URL.replace(/\/api\/plants\/?$/, '/api/auth')
+        const response = await fetch(`${authApiUrl}/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        })
+        const result = await response.json()
+
+        if (response.status === 401) {
+          localStorage.removeItem('plantorai_token')
+          localStorage.removeItem('plantorai_user')
+          navigate('/login', { replace: true, state: { from: '/account' } })
+          return
+        }
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || 'Could not load your account.')
+        }
+
+        setUser(result.user as AuthUser)
+        localStorage.setItem('plantorai_user', JSON.stringify(result.user))
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return
+        setError(err instanceof Error ? err.message : 'Unable to load your account.')
+      } finally {
+        if (!controller.signal.aborted) setLoading(false)
+      }
+    }
+
+    loadCurrentUser()
+    return () => controller.abort()
+  }, [navigate])
+
+  function logout() {
+    localStorage.removeItem('plantorai_token')
+    localStorage.removeItem('plantorai_user')
+    navigate('/', { replace: true })
+  }
+
+  return (
+    <main className="site-shell auth-page">
+      <SiteHeader />
+      <section className="account-panel">
+        <p className="eyebrow">YOUR PLANTORAI ACCOUNT</p>
+        <h1>My account</h1>
+
+        {loading ? (
+          <div className="status-panel" role="status">
+            <span className="loader" />
+            <p>Verifying your session…</p>
+          </div>
+        ) : error ? (
+          <div className="status-panel error-panel" role="alert">
+            <h2>We couldn't load your account.</h2>
+            <p>{error}</p>
+            <button className="primary-button" type="button" onClick={() => window.location.reload()}>
+              Try again
+            </button>
+          </div>
+        ) : user ? (
+          <div className="account-card">
+            <div className="account-avatar" aria-hidden="true">🌿</div>
+            <h2>{user.name}</h2>
+            <p className="account-email">{user.email}</p>
+            <div className="account-detail">
+              <span>Account role</span>
+              <strong>{user.role}</strong>
+            </div>
+            <p className="auth-security-note">
+              Your account details are loaded from the authenticated backend session.
+            </p>
+            <button className="primary-button auth-submit" type="button" onClick={logout}>
+              Log out
+            </button>
+          </div>
+        ) : null}
+      </section>
+      <footer className="site-footer">
+        <Link className="brand" to="/">plantorai<span>.</span></Link>
+        <p>Make room for nature.</p>
+        <span>Plant marketplace · V1</span>
+      </footer>
+    </main>
+  )
+}
+
 /* -------------------- Not Found Page -------------------- */
 
 function NotFoundPage() {
@@ -899,6 +1012,7 @@ function App() {
         <Route path="/plants/:id" element={<PlantDetailsPage />} />
         <Route path="/login" element={<AuthPage mode="login" />} />
         <Route path="/register" element={<AuthPage mode="register" />} />
+        <Route path="/account" element={<ProtectedAccountPage />} />
         <Route
           path="/recommendations"
           element={<RecommendationsPage />}
