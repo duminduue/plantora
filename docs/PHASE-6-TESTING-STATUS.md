@@ -1,13 +1,13 @@
 # Phase 6 — Testing and Reliability Status
 
-**Status:** In progress. The project owner reports 52 backend tests passing, a successful frontend production build, and a lint run with zero errors. Additional regression and workflow checks remain before Phase 6 can be marked complete.
+**Status:** In progress. The project owner reports 55 backend tests passing after the latest checkout/restock test additions. The owner previously reported a successful frontend production build and a lint run with zero errors and 10 warnings. Additional regression and workflow checks remain before Phase 6 can be marked complete.
 
 ## Verification evidence
 
 The following results were reported by the project owner from the local checkout on 28 October 2026. They have not been independently executed by this document's author.
 
 - Backend test command: run from the `server` directory with `npm test`.
-- Backend automated tests: **52 passed** (latest owner-reported run).
+- Backend automated tests: **55 passed** (owner-reported run after the latest checkout/restock test additions; not independently executed here).
 - Test files: `server/tests/api.test.js` and `server/tests/plantCare.test.js`.
 - Earlier run before the latest additions: 46 passed across 2 files.
 - Frontend production build: the owner reported a successful `npm run build` from the project root.
@@ -19,7 +19,7 @@ The following results were reported by the project owner from the local checkout
 
 The existing tests cover plant listing and filters, invalid and nonexistent plant IDs, empty search results, order validation and creation, stock availability, authentication and JWT validation, customer/admin authorization, seller ownership isolation, seller order privacy, admin user management, and stock movement records.
 
-Checkout tests also verify that an order exceeding available stock is rejected without changing stock or creating order/sale-history records, duplicate cart lines for the same plant are combined for quantity and subtotal calculations, and a nonexistent plant ID is rejected without creating an order. The latest additions also test that admin restock rejects zero, negative, fractional, and string quantities without changing stock or writing a restock history record. These newly added tests are committed, but they still require a fresh local test run before their results can be recorded.
+Checkout tests verify that an order exceeding available stock is rejected without changing stock or creating order/sale-history records, duplicate cart lines for the same plant are combined for quantity and subtotal calculations, and a nonexistent plant ID is rejected without creating an order. Admin restock validation tests verify that zero, negative, fractional, and string quantities are rejected without changing stock or writing a restock history record. The project owner reports that the full backend suite now passes with 55 tests.
 
 ### `server/tests/plantCare.test.js`
 
@@ -44,7 +44,6 @@ The root `package.json` has no `test` script, so running `npm test` at the proje
 
 ## Remaining Phase 6 work
 
-- Newly added checkout duplicate-line, missing-plant, and admin restock validation tests need to be run locally; update the verified count only after the suite passes.
 - Review remaining coverage gaps and add targeted tests only where needed.
 - Review seller/admin restrictions and order/stock consistency for uncovered cases.
 - Fix lint warnings only when safe and useful; rerun lint and tests after changes.
