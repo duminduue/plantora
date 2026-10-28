@@ -324,6 +324,16 @@ describe('PlantorAI API', () => {
     expect(response.body.message).toBe('Invalid or expired token')
   })
 
+  it('GET /api/auth/me should reject an invalid JWT', async () => {
+    const response = await request(app)
+      .get('/api/auth/me')
+      .set('Authorization', 'Bearer definitely-not-a-valid-jwt')
+
+    expect(response.status).toBe(401)
+    expect(response.body.success).toBe(false)
+    expect(response.body.message).toBe('Invalid or expired token')
+  })
+
   it('role authorization should deny customers access to admin-only routes', async () => {
     const roleApp = express()
     roleApp.get(
