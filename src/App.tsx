@@ -1072,6 +1072,7 @@ function CartPage() {
   const [stockById, setStockById] = useState<Record<string, number>>({})
   const [stockLoading, setStockLoading] = useState(false)
   const [stockCheckError, setStockCheckError] = useState('')
+  const isSignedIn = Boolean(localStorage.getItem('plantorai_token'))
 
   useEffect(() => {
     let cancelled = false
@@ -1154,9 +1155,14 @@ function CartPage() {
 
     try {
       const ordersApiUrl = API_URL.replace(/\/api\/plants\/?$/, '/api/orders')
+      const token = localStorage.getItem('plantorai_token')
+      if (!token) {
+        navigate('/login', { state: { from: '/cart' } })
+        return
+      }
       const response = await fetch(ordersApiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           customerName,
           email,
@@ -1254,15 +1260,19 @@ function CartPage() {
                 disabled={stockLoading || Boolean(stockCheckError) || unavailableItems.length > 0}
                 onClick={() => {
                   setError('')
+                  if (!isSignedIn) {
+                    navigate('/login', { state: { from: '/cart' } })
+                    return
+                  }
                   setCheckoutOpen(true)
                 }}
               >
-                {stockLoading ? 'Checking stock…' : unavailableItems.length > 0 ? 'Stock unavailable' : 'Proceed to checkout'}
+                {!isSignedIn ? 'Log in to checkout' : stockLoading ? 'Checking stock…' : unavailableItems.length > 0 ? 'Stock unavailable' : 'Proceed to checkout'}
               </button>
             </aside>
           </div>
         )}
-        {checkoutOpen && cart.length > 0 && (
+        {checkoutOpen && cart.length > 0 && isSignedIn && (
           <form className="checkout-card" onSubmit={placeOrder}>
             <h2>Checkout details</h2>
             <p>Submit an order request. No online payment is collected in this version.</p>
