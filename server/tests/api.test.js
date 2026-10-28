@@ -12,6 +12,8 @@ import express from 'express'
 import jwt from 'jsonwebtoken'
 import { authorize } from '../middleware/auth.js'
 import User from '../models/User.js'
+import Order from '../models/Order.js'
+import Plant from '../models/Plant.js'
 import serverModule from '../server.js'
 
 const { app } = serverModule
@@ -34,6 +36,7 @@ describe('PlantorAI API', () => {
   afterAll(async () => {
     if (mongoose.connection.readyState === 1 && testEmails.length) {
       await User.deleteMany({ email: { $in: testEmails } })
+      await Order.deleteMany({ email: { $in: testEmails } })
     }
     if (mongoose.connection.readyState !== 0) {
       await mongoose.disconnect()
@@ -204,6 +207,59 @@ describe('PlantorAI API', () => {
     expect(response.body.data).toEqual([])
   })
 
+
+  it('POST /api/orders should validate prices and persist an order as Pending', async () => {
+    const plant = await Plant.findOne()
+    expect(plant).toBeTruthy()
+    const email = `order-test-${Date.now()}@example.com`
+    testEmails.push(email)
+    const response = await request(app).post('/api/orders').send({
+      customerName: 'Order Test Customer',
+      email,
+      address: '123 Green Street, Colombo',
+      items: [{ plantId: plant._id.toString(), quantity: 2 }],
+    })
+
+    expect(response.status).toBe(201)
+    expect(response.body.success).toBe(true)
+    expect(response.body.data.orderNumber).toMatch(/^PA-/)
+    expect(response.body.data.status).toBe('Pending')
+    expect(response.body.data.subtotal).toBe(plant.price * 2)
+    const savedOrder = await Order.findOne({ orderNumber: response.body.data.orderNumber })
+    expect(savedOrder).toBeTruthy()
+    expect(savedOrder.email).toBe(email)
+  })
+
+  it('POST /api/orders should reject invalid checkout details', async () => {
+    const response = await request(app).post('/api/orders').send({
+      customerName: 'A',
+      email: 'invalid-email',
+      address: 'short',
+      items: [],
+    })
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+  })
+
+  it('POST /api/orders should reject invalid item IDs and quantities', async () => {
+    const base = {
+      customerName: 'Order Test Customer',
+      email: 'order-validation@example.com',
+      address: '123 Green Street, Colombo',
+    }
+    const badId = await request(app).post('/api/orders').send({
+      ...base,
+      items: [{ plantId: 'not-an-id', quantity: 1 }],
+    })
+    const badQuantity = await request(app).post('/api/orders').send({
+      ...base,
+      items: [{ plantId: new mongoose.Types.ObjectId().toString(), quantity: 0 }],
+    })
+
+    expect(badId.status).toBe(400)
+    expect(badQuantity.status).toBe(400)
+  })
 
   it('POST /api/auth/register should create a customer with a hashed password', async () => {
     const email = `auth-test-${Date.now()}@example.com`
