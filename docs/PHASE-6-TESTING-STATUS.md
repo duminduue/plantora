@@ -1,15 +1,15 @@
 # Phase 6 — Testing and Reliability Status
 
-**Status:** In progress. Existing backend tests and the frontend production build have been run by the project owner. Additional edge-case coverage and regression checks remain to be reviewed before Phase 6 can be marked complete.
+**Status:** In progress. The project owner reports 51 backend tests passing, a successful frontend production build, and a lint run with zero errors. Additional regression and workflow checks remain before Phase 6 can be marked complete.
 
 ## Verification evidence
 
 The following results were reported by the project owner from the local checkout on 28 October 2026. They have not been independently executed by this document's author.
 
 - Backend test command: run from the `server` directory with `npm test`.
-- Backend automated tests: **46 passed**.
-- Test files: **2 passed** (`server/tests/api.test.js` and `server/tests/plantCare.test.js`).
-- Backend test duration shown in the terminal: 15.52 seconds.
+- Backend automated tests: **51 passed** (latest owner-reported run).
+- Test files: `server/tests/api.test.js` and `server/tests/plantCare.test.js`.
+- Earlier run before the latest additions: 46 passed across 2 files.
 - Frontend production build: the owner reported a successful `npm run build` from the project root.
 - Frontend lint: `npm run lint` completed with **0 errors and 10 warnings**.
 
@@ -21,7 +21,9 @@ The existing tests cover plant listing and filters, invalid and nonexistent plan
 
 ### `server/tests/plantCare.test.js`
 
-The existing tests cover empty and over-length questions, missing Gemini API configuration, successful provider responses, provider quota errors, and rate limiting.
+The AI endpoint tests cover empty and over-length questions, missing Gemini API configuration, successful provider responses, provider quota errors, rate limiting, over-length plant names, invalid provider credentials, provider responses with no usable answer, network failures, and timeout handling.
+
+The five additional AI failure/validation tests were committed in GitHub commit `a32a8b3`. The project owner reports that the updated suite passes with 51 tests.
 
 ## Lint warnings observed
 
@@ -40,13 +42,12 @@ The root `package.json` has no `test` script, so running `npm test` at the proje
 
 ## Remaining Phase 6 work
 
-- Review coverage gaps and add targeted tests only where needed.
-- Verify failure paths such as invalid payloads, unavailable services, and relevant database/provider failures.
+- Review remaining coverage gaps and add targeted tests only where needed.
 - Review seller/admin restrictions and order/stock consistency for uncovered cases.
 - Fix lint warnings only when safe and useful; rerun lint and tests after changes.
 - Perform regression checks on authentication, marketplace browsing, checkout, seller/admin workflows, and AI plant-care.
-- Record the exact results and known limitations after the remaining checks are run.
+- Record exact results and known limitations after the remaining checks are run.
 
 ## Completion decision
 
-Phase 6 is **not yet complete**. The reported 46 passing backend tests and successful frontend build are a strong baseline, but they do not prove every workflow and failure scenario has been tested.
+Phase 6 is **not yet complete**. The latest owner-reported backend test run passes 51 tests, and the owner previously reported a successful frontend build. Further regression checks and review of remaining workflow coverage are still needed before declaring the phase complete.
