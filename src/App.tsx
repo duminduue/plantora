@@ -150,10 +150,12 @@ function SiteHeader() {
 
       <div className="header-actions">
         {signedIn ? (
-          <Link className="auth-nav-link" to="/account">My account</Link>
-          <button className="auth-nav-button" type="button" onClick={handleLogout}>
-            Log out
-          </button>
+          <>
+            <Link className="auth-nav-link" to="/account">My account</Link>
+            <button className="auth-nav-button" type="button" onClick={handleLogout}>
+              Log out
+            </button>
+          </>
         ) : (
           <>
             <Link className="auth-nav-link" to="/login">Log in</Link>
