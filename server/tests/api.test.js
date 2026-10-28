@@ -331,6 +331,38 @@ describe('PlantorAI API', () => {
     await Plant.deleteOne({ _id: plant._id })
   })
 
+  it('POST /api/orders should not change stock or create records when quantity exceeds available stock', async () => {
+    const plant = await Plant.create({
+      name: 'Insufficient Stock Test Plant',
+      category: 'Test',
+      price: 750,
+      description: 'Temporary plant for insufficient stock checkout testing',
+      stock: 1,
+    })
+    testPlantIds.push(plant._id)
+    const email = `insufficient-stock-${Date.now()}@example.com`
+    testEmails.push(email)
+
+    const response = await request(app)
+      .post('/api/orders')
+      .set('Authorization', `Bearer ${orderAuthToken}`)
+      .send({
+        customerName: 'Insufficient Stock Customer',
+        email,
+        phone: '0771234567',
+        address: '123 Green Street, Colombo',
+        items: [{ plantId: plant._id.toString(), quantity: 2 }],
+      })
+
+    expect(response.status).toBe(409)
+    expect(response.body.success).toBe(false)
+
+    const unchangedPlant = await Plant.findById(plant._id)
+    expect(unchangedPlant.stock).toBe(1)
+    expect(await Order.findOne({ email })).toBeNull()
+    expect(await StockMovement.findOne({ plant: plant._id, type: 'Sale' })).toBeNull()
+  })
+
   it('POST /api/orders should reject invalid item IDs and quantities', async () => {
     const base = {
       customerName: 'Order Test Customer',
