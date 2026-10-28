@@ -1,0 +1,51 @@
+# Phase 5 — AI Plant-Care Assistant
+
+**Status:** Planning / not implemented yet.
+
+## Goal
+Add a small, demonstrable assistant that answers basic plant-care questions using the selected plant's known catalogue details and the user's question.
+
+## Locked MVP scope
+1. A dedicated Plant Care Assistant page or panel.
+2. A text input for one plant-care question and an optional selected plant from the existing catalogue.
+3. A backend endpoint that validates the request and returns a structured assistant answer.
+4. Server-side AI provider integration only; provider credentials must stay in server environment variables and must never be exposed through `VITE_*` variables or committed to Git.
+5. Basic loading, empty-input, error, and retry states in the UI.
+6. A concise safety note: advice is general care guidance, not a guarantee; users should verify plant-specific needs and keep plants away from children/pets when toxicity is uncertain.
+7. Automated tests for input validation, provider failure handling, and endpoint behavior using a mocked provider (no paid API calls in tests).
+
+## Out of scope for the MVP
+- Image-based disease detection.
+- Plant diagnosis from photos.
+- Voice chat.
+- User conversation history or long-term memory.
+- Autonomous watering, sensor/IoT integrations, or smart-home controls.
+- Subscription/billing or paid AI features.
+- Training a custom AI model.
+
+## Implementation sequence
+1. Confirm the AI provider and API access approach before coding provider-specific calls.
+2. Add backend configuration validation and a small provider service module.
+3. Add a validated, rate-conscious assistant API endpoint.
+4. Build the frontend assistant UI and connect it to the endpoint.
+5. Add mocked-provider API tests and run the complete existing backend test suite.
+6. Run the frontend production build and manually test success, invalid input, and provider-error paths.
+7. Document setup, limitations, and test evidence.
+
+## Security and reliability requirements
+- Never place provider secrets in frontend code or client-visible environment variables.
+- Bound request length and reject empty or malformed input.
+- Do not send credentials, customer data, order data, or unrelated account information to the provider.
+- Do not claim certainty about plant toxicity, disease, or treatment when the evidence is insufficient.
+- Keep existing marketplace, authentication, checkout, seller, and admin workflows working.
+
+## Completion criteria
+- A customer can submit a plant-care question and receive a useful response.
+- The UI handles loading, invalid input, and provider failures.
+- Provider keys are server-side only.
+- Automated tests cover endpoint validation and mocked provider behavior.
+- Frontend build and all backend tests pass.
+- Existing core workflows pass a regression checklist.
+
+## Decision needed before implementation
+Choose the AI provider and confirm that an API key is available. No provider-specific code should be written until this is decided.
