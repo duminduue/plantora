@@ -33,7 +33,7 @@ PlantorAI is a plant marketplace web application for browsing plants, viewing pl
 
 ```bash
 git clone https://github.com/duminduue/plantorai.git
-cd plantora
+cd plantorai
 npm install
 ```
 
@@ -48,7 +48,8 @@ npm install
 
 Copy `.env.example` to `.env` and configure at least:
 - `MONGODB_URI`
-- `JWT_SECRET` (use a strong random value of at least 32 characters)\n- `GEMINI_API_KEY` (Google AI Studio key; required for the AI assistant)
+- `JWT_SECRET` (use a strong random value of at least 32 characters)
+- `GEMINI_API_KEY` (Google AI Studio key; required for the AI assistant)
 
 Keep `.env` private and never commit real credentials.
 
