@@ -1,6 +1,6 @@
 # Phase 6 — Testing and Reliability Status
 
-**Status:** In progress. The project owner reports 55 backend tests passing after the latest checkout/restock test additions. The owner previously reported a successful frontend production build and a lint run with zero errors and 10 warnings. Additional regression and workflow checks remain before Phase 6 can be marked complete.
+**Status:** In progress. The project owner reports 55 backend tests passing after the latest checkout/restock test additions. After lint cleanup changes, the owner reports zero lint errors and two remaining React `set-state-in-effect` warnings in Admin and Seller dashboard loading effects. The frontend production build was reported successful before those latest lint cleanup changes and should be rerun. Additional regression and workflow checks remain before Phase 6 can be marked complete.
 
 ## Verification evidence
 
@@ -11,7 +11,8 @@ The following results were reported by the project owner from the local checkout
 - Test files: `server/tests/api.test.js` and `server/tests/plantCare.test.js`.
 - Earlier run before the latest additions: 46 passed across 2 files.
 - Frontend production build: the owner reported a successful `npm run build` from the project root.
-- Frontend lint: `npm run lint` completed with **0 errors and 10 warnings**.
+- Frontend lint, initial run: `npm run lint` completed with **0 errors and 10 warnings**.
+- Frontend lint, after cleanup: the owner reports **0 errors and 2 warnings**. Both remaining warnings concern Admin/Seller dashboard loading effects calling async functions that update state. These are retained pending a behavior-safe fix rather than silenced.
 
 ## Existing test coverage reviewed
 
@@ -36,7 +37,7 @@ The lint output reports these warning groups:
 - React state-in-effect warnings in `src/App.tsx`.
 - React Hook dependency warnings for cart stock checking, dashboard loading, and seller listing loading.
 
-These warnings are not lint errors. Review before changing React effect dependencies or state flows because careless changes could affect existing behavior.
+These warnings are not lint errors. Unused imports and the unused upload middleware parameter were cleaned up, and the React hook dependencies were updated. The two remaining effect warnings are documented rather than suppressed because changing dashboard loading behavior needs care.
 
 ## Important command detail
 
@@ -46,7 +47,8 @@ The root `package.json` has no `test` script, so running `npm test` at the proje
 
 - Review remaining coverage gaps and add targeted tests only where needed.
 - Review seller/admin restrictions and order/stock consistency for uncovered cases.
-- Fix lint warnings only when safe and useful; rerun lint and tests after changes.
+- Rerun the production build after the latest React lint cleanup changes.
+- Fix or explicitly accept the two remaining lint warnings only after reviewing their impact; rerun lint and tests after changes.
 - Perform regression checks on authentication, marketplace browsing, checkout, seller/admin workflows, and AI plant-care.
 - Record exact results and known limitations after the remaining checks are run.
 
