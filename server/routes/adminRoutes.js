@@ -64,6 +64,9 @@ function validatePlant(body, partial = false) {
     }
   }
 
+  if (body.isActive !== undefined && typeof body.isActive !== 'boolean') errors.push('isActive must be a boolean')
+  if (body.moderationStatus !== undefined && !['Pending', 'Approved', 'Rejected'].includes(body.moderationStatus)) errors.push('Invalid moderation status')
+  if (body.moderationNote !== undefined && (typeof body.moderationNote !== 'string' || body.moderationNote.length > 500)) errors.push('moderationNote must be at most 500 characters')
   if (body.imageUrl !== undefined && (typeof body.imageUrl !== 'string' || body.imageUrl.length > 2000)) {
     errors.push('imageUrl must be a string of at most 2000 characters')
   }
