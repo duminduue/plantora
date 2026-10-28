@@ -2,6 +2,7 @@ const express = require('express')
 const mongoose = require('mongoose')
 const Order = require('../models/Order')
 const Plant = require('../models/Plant')
+const StockMovement = require('../models/StockMovement')
 
 const router = express.Router()
 
@@ -113,6 +114,27 @@ router.post('/', async (req, res) => {
     })
     orderCreated = true
     reservedStock.length = 0
+
+    try {
+      await StockMovement.insertMany(orderItems.map((item) => {
+        const plant = byId.get(item.plant.toString())
+        const stockAfter = plant.stock - item.quantity
+        return {
+          plant: item.plant,
+          plantName: item.name,
+          type: 'Sale',
+          quantityChange: -item.quantity,
+          stockBefore: stockAfter + item.quantity,
+          stockAfter,
+          orderNumber,
+          note: `Order ${orderNumber}`,
+        }
+      }))
+    } catch (historyError) {
+      // The order and stock reservation are already committed; keep checkout successful
+      // if history logging has a transient failure.
+      console.error('Stock history logging error:', historyError.message)
+    }
 
     return res.status(201).json({
       success: true,
