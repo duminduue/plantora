@@ -8,6 +8,7 @@ const authRoutes = require('./routes/authRoutes')
 const orderRoutes = require('./routes/orderRoutes')
 const adminRoutes = require('./routes/adminRoutes')
 const sellerRoutes = require('./routes/sellerRoutes')
+const plantCareRoutes = require('./routes/plantCareRoutes')
 require('dotenv').config()
 
 const app = express()
@@ -21,6 +22,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/seller', sellerRoutes)
+app.use('/api/plant-care', plantCareRoutes.router)
 
 app.get('/', (req, res) => {
   res.json({
