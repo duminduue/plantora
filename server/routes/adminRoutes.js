@@ -96,13 +96,16 @@ router.post('/upload-image', (req, res, next) => {
 
 router.get('/dashboard', async (req, res) => {
   try {
-    const [plantCount, orderCount, customerCount, pendingOrders, recentOrders, lowStockCount] = await Promise.all([
+    const [plantCount, orderCount, customerCount, pendingOrders, recentOrders, lowStockCount, pendingListings, sellerCount, inactiveUsers] = await Promise.all([
       Plant.countDocuments(),
       Order.countDocuments(),
       User.countDocuments({ role: 'customer', isActive: true }),
       Order.countDocuments({ status: 'Pending' }),
       Order.find().sort({ createdAt: -1 }).limit(5).lean(),
       Plant.countDocuments({ stock: { $lte: 5 } }),
+      Plant.countDocuments({ moderationStatus: 'Pending' }),
+      User.countDocuments({ role: 'seller' }),
+      User.countDocuments({ isActive: false }),
     ])
 
     return res.json({
@@ -114,6 +117,9 @@ router.get('/dashboard', async (req, res) => {
         pendingOrders,
         lowStockCount,
         recentOrders,
+        pendingListings,
+        sellerCount,
+        inactiveUsers,
       },
     })
   } catch (error) {
@@ -217,7 +223,7 @@ router.patch('/plants/:id', async (req, res) => {
     const errors = validatePlant(body, true)
     if (errors.length) return res.status(400).json({ success: false, message: errors[0], errors })
 
-    const allowed = ['name', 'category', 'price', 'stock', 'description', 'imageUrl', 'sunlight']
+    const allowed = ['name', 'category', 'price', 'stock', 'description', 'imageUrl', 'sunlight', 'isActive', 'moderationStatus', 'moderationNote']
     const updates = {}
     for (const field of allowed) {
       if (body[field] !== undefined) {
@@ -299,6 +305,83 @@ router.patch('/orders/:id/status', async (req, res) => {
   } catch (error) {
     console.error('Admin order status error:', error.message)
     return res.status(500).json({ success: false, message: 'Unable to update order status' })
+  }
+})
+
+
+// Admin user management. Public registration cannot assign privileged roles.
+router.get('/users', async (req, res) => {
+  try {
+    const users = await User.find().select('_id name email role isActive createdAt').sort({ createdAt: -1 }).limit(500).lean()
+    return res.json({ success: true, count: users.length, data: users })
+  } catch (error) {
+    console.error('Admin users error:', error.message)
+    return res.status(500).json({ success: false, message: 'Unable to load users' })
+  }
+})
+
+router.patch('/users/:id', async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid user ID' })
+    const body = req.body || {}
+    const updates = {}
+    if (body.role !== undefined) {
+      if (!['customer', 'seller', 'admin'].includes(body.role)) return res.status(400).json({ success: false, message: 'Invalid user role' })
+      if (req.params.id === req.user.id && body.role !== 'admin') return res.status(400).json({ success: false, message: 'You cannot remove your own admin role' })
+      updates.role = body.role
+    }
+    if (body.isActive !== undefined) {
+      if (typeof body.isActive !== 'boolean') return res.status(400).json({ success: false, message: 'isActive must be a boolean' })
+      if (req.params.id === req.user.id && body.isActive === false) return res.status(400).json({ success: false, message: 'You cannot deactivate your own account' })
+      updates.isActive = body.isActive
+    }
+    if (!Object.keys(updates).length) return res.status(400).json({ success: false, message: 'Provide a role or active status' })
+    const user = await User.findByIdAndUpdate(req.params.id, { $set: updates }, { new: true, runValidators: true }).select('_id name email role isActive createdAt')
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' })
+    return res.json({ success: true, message: 'User updated', data: user })
+  } catch (error) {
+    console.error('Admin update user error:', error.message)
+    return res.status(500).json({ success: false, message: 'Unable to update user' })
+  }
+})
+
+// Admin listing moderation queue and review actions.
+router.get('/moderation', async (_req, res) => {
+  try {
+    const plants = await Plant.find({ $or: [{ moderationStatus: 'Pending' }, { moderationStatus: 'Rejected' }, { isActive: false }] }).populate('seller', 'name email').sort({ updatedAt: -1 }).limit(300).lean()
+    return res.json({ success: true, count: plants.length, data: plants })
+  } catch (error) {
+    console.error('Admin moderation queue error:', error.message)
+    return res.status(500).json({ success: false, message: 'Unable to load moderation queue' })
+  }
+})
+
+router.patch('/plants/:id/moderation', async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid plant ID' })
+    const { moderationStatus, moderationNote, isActive } = req.body || {}
+    const updates = {}
+    if (moderationStatus !== undefined) {
+      if (!['Pending', 'Approved', 'Rejected'].includes(moderationStatus)) return res.status(400).json({ success: false, message: 'Invalid moderation status' })
+      updates.moderationStatus = moderationStatus
+      if (moderationStatus === 'Approved') updates.isActive = true
+      if (moderationStatus === 'Rejected') updates.isActive = false
+    }
+    if (moderationNote !== undefined) {
+      if (typeof moderationNote !== 'string' || moderationNote.length > 500) return res.status(400).json({ success: false, message: 'Moderation note must be at most 500 characters' })
+      updates.moderationNote = moderationNote.trim()
+    }
+    if (isActive !== undefined) {
+      if (typeof isActive !== 'boolean') return res.status(400).json({ success: false, message: 'isActive must be a boolean' })
+      updates.isActive = isActive
+    }
+    if (!Object.keys(updates).length) return res.status(400).json({ success: false, message: 'Provide moderation changes' })
+    const plant = await Plant.findByIdAndUpdate(req.params.id, { $set: updates }, { new: true, runValidators: true })
+    if (!plant) return res.status(404).json({ success: false, message: 'Plant not found' })
+    return res.json({ success: true, message: 'Listing moderation updated', data: plant })
+  } catch (error) {
+    console.error('Admin moderation update error:', error.message)
+    return res.status(500).json({ success: false, message: 'Unable to update listing moderation' })
   }
 })
 
