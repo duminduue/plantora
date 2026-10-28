@@ -318,6 +318,69 @@ describe('PlantorAI API', () => {
     expect(badQuantity.status).toBe(400)
   })
 
+  it('admin API should reject customers and allow an admin dashboard request', async () => {
+    const customerEmail = `admin-denied-${Date.now()}@example.com`
+    const adminEmail = `admin-allowed-${Date.now()}@example.com`
+    testEmails.push(customerEmail, adminEmail)
+
+    const customerRegistration = await request(app).post('/api/auth/register').send({
+      name: 'Dashboard Customer',
+      email: customerEmail,
+      password: 'StrongPassword123',
+    })
+    expect(customerRegistration.status).toBe(201)
+
+    const denied = await request(app)
+      .get('/api/admin/dashboard')
+      .set('Authorization', `Bearer ${customerRegistration.body.token}`)
+    expect(denied.status).toBe(403)
+
+    const admin = await User.create({
+      name: 'Dashboard Admin',
+      email: adminEmail,
+      passwordHash: 'test-only-hash-not-used-for-this-request',
+      role: 'admin',
+    })
+    const adminToken = jwt.sign(
+      { sub: admin._id.toString(), role: 'admin' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h', issuer: 'plantorai-api', audience: 'plantorai-client' }
+    )
+    const allowed = await request(app)
+      .get('/api/admin/dashboard')
+      .set('Authorization', `Bearer ${adminToken}`)
+
+    expect(allowed.status).toBe(200)
+    expect(allowed.body.success).toBe(true)
+    expect(typeof allowed.body.data.plantCount).toBe('number')
+    expect(typeof allowed.body.data.orderCount).toBe('number')
+    expect(typeof allowed.body.data.customerCount).toBe('number')
+  })
+
+  it('admin API should validate plant creation data', async () => {
+    const adminEmail = `admin-validation-${Date.now()}@example.com`
+    testEmails.push(adminEmail)
+    const admin = await User.create({
+      name: 'Plant Admin',
+      email: adminEmail,
+      passwordHash: 'test-only-hash-not-used-for-this-request',
+      role: 'admin',
+    })
+    const token = jwt.sign(
+      { sub: admin._id.toString(), role: 'admin' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h', issuer: 'plantorai-api', audience: 'plantorai-client' }
+    )
+
+    const response = await request(app)
+      .post('/api/admin/plants')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'X', category: 'Test', price: -1, stock: -2, description: 'short' })
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+  })
+
   it('POST /api/auth/register should create a customer with a hashed password', async () => {
     const email = `auth-test-${Date.now()}@example.com`
     testEmails.push(email)
