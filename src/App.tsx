@@ -100,10 +100,22 @@ function SiteHeader() {
   const location = useLocation()
   const navigate = useNavigate()
   const [signedIn, setSignedIn] = useState(() => Boolean(localStorage.getItem('plantorai_token')))
+  const [isAdmin, setIsAdmin] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('plantorai_user') || 'null')?.role === 'admin'
+    } catch {
+      return false
+    }
+  })
   const [cartCount, setCartCount] = useState(() => readCart().reduce((sum, item) => sum + item.quantity, 0))
 
   useEffect(() => {
     setSignedIn(Boolean(localStorage.getItem('plantorai_token')))
+    try {
+      setIsAdmin(JSON.parse(localStorage.getItem('plantorai_user') || 'null')?.role === 'admin')
+    } catch {
+      setIsAdmin(false)
+    }
   }, [location.pathname])
 
   useEffect(() => {
@@ -120,6 +132,7 @@ function SiteHeader() {
     localStorage.removeItem('plantorai_token')
     localStorage.removeItem('plantorai_user')
     setSignedIn(false)
+    setIsAdmin(false)
     navigate('/')
   }
 
@@ -193,6 +206,7 @@ function SiteHeader() {
         <Link className="auth-nav-link" to="/cart">Cart ({cartCount})</Link>
         {signedIn ? (
           <>
+            {isAdmin && <Link className="auth-nav-link" to="/admin">Admin</Link>}
             <Link className="auth-nav-link" to="/account">My account</Link>
             <button className="auth-nav-button" type="button" onClick={handleLogout}>
               Log out
