@@ -365,6 +365,51 @@ describe('PlantorAI API', () => {
     expect(typeof allowed.body.data.customerCount).toBe('number')
   })
 
+  it('admin restock should update inventory and create a stock history record', async () => {
+    const adminEmail = `admin-restock-${Date.now()}@example.com`
+    testEmails.push(adminEmail)
+    const admin = await User.create({
+      name: 'Restock Test Admin',
+      email: adminEmail,
+      passwordHash: 'test-only-hash-not-used-for-this-request',
+      role: 'admin',
+    })
+    const token = jwt.sign(
+      { sub: admin._id.toString(), role: 'admin' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h', issuer: 'plantorai-api', audience: 'plantorai-client' }
+    )
+    const plant = await Plant.create({
+      name: 'Restock History Test Plant',
+      category: 'Test',
+      price: 1000,
+      description: 'Temporary plant for stock history test',
+      stock: 11,
+    })
+    testPlantIds.push(plant._id)
+
+    const response = await request(app)
+      .post(`/api/admin/plants/${plant._id}/restock`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ quantity: 20 })
+
+    expect(response.status).toBe(200)
+    expect(response.body.success).toBe(true)
+    expect(response.body.data.plant.stock).toBe(31)
+    expect(response.body.data.movement.stockBefore).toBe(11)
+    expect(response.body.data.movement.stockAfter).toBe(31)
+
+    const savedMovement = await StockMovement.findOne({ plant: plant._id, type: 'Restock' })
+    expect(savedMovement).toBeTruthy()
+    expect(savedMovement.quantityChange).toBe(20)
+
+    const history = await request(app)
+      .get('/api/admin/stock-history')
+      .set('Authorization', `Bearer ${token}`)
+    expect(history.status).toBe(200)
+    expect(history.body.data.some((entry) => entry._id === savedMovement._id.toString())).toBe(true)
+  })
+
   it('admin API should validate plant creation data', async () => {
     const adminEmail = `admin-validation-${Date.now()}@example.com`
     testEmails.push(adminEmail)
