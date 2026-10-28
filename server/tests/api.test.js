@@ -14,6 +14,7 @@ import { authorize } from '../middleware/auth.js'
 import User from '../models/User.js'
 import Order from '../models/Order.js'
 import Plant from '../models/Plant.js'
+import StockMovement from '../models/StockMovement.js'
 import serverModule from '../server.js'
 
 const { app } = serverModule
@@ -40,6 +41,7 @@ describe('PlantorAI API', () => {
       await Order.deleteMany({ email: { $in: testEmails } })
     }
     if (mongoose.connection.readyState === 1 && testPlantIds.length) {
+      await StockMovement.deleteMany({ plant: { $in: testPlantIds } })
       await Plant.deleteMany({ _id: { $in: testPlantIds } })
     }
     if (mongoose.connection.readyState !== 0) {
@@ -242,6 +244,12 @@ describe('PlantorAI API', () => {
     expect(savedOrder).toBeTruthy()
     expect(savedOrder.email).toBe(email)
     expect(savedOrder.phone).toBe('0771234567')
+    const saleMovement = await StockMovement.findOne({ orderNumber: response.body.data.orderNumber, plant: plant._id })
+    expect(saleMovement).toBeTruthy()
+    expect(saleMovement.type).toBe('Sale')
+    expect(saleMovement.quantityChange).toBe(-2)
+    expect(saleMovement.stockBefore).toBe(10)
+    expect(saleMovement.stockAfter).toBe(8)
   })
 
   it('POST /api/orders should reject invalid checkout details', async () => {
