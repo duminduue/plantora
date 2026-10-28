@@ -1370,6 +1370,7 @@ function AdminDashboardPage() {
     sunlight: '',
     stock: '0',
   })
+  const [showAddPlantForm, setShowAddPlantForm] = useState(false)
   const [inventorySearch, setInventorySearch] = useState('')
   const [inventoryCategory, setInventoryCategory] = useState('')
   const [restockAmounts, setRestockAmounts] = useState<Record<string, string>>({})
@@ -1488,6 +1489,9 @@ function AdminDashboardPage() {
       setDescription('')
       setImageUrl('')
       setImageFile(null)
+      setCategory('')
+      setSunlight('Indirect light')
+      setShowAddPlantForm(false)
       setMessage('Plant added successfully.')
       await loadDashboard()
     } catch (err) {
@@ -1623,23 +1627,31 @@ function AdminDashboardPage() {
             )}
 
             <section className="admin-section">
-              <h2>Add a plant</h2>
-              <form className="admin-plant-form" onSubmit={createPlant}>
-                <label className="auth-field">Plant name<input value={name} onChange={(e) => setName(e.target.value)} minLength={2} maxLength={100} required /></label>
-                <label className="auth-field">Category<input value={category} onChange={(e) => setCategory(e.target.value)} minLength={2} maxLength={60} required /></label>
-                <label className="auth-field">Price (LKR)<input type="number" value={price} onChange={(e) => setPrice(e.target.value)} min="0" step="0.01" required /></label>
-                <label className="auth-field">Initial stock<input type="number" value={stock} onChange={(e) => setStock(e.target.value)} min="0" max="1000000" step="1" required /></label>
-                <label className="auth-field admin-wide-field">Description<textarea value={description} onChange={(e) => setDescription(e.target.value)} minLength={5} maxLength={2000} rows={3} required /></label>
-                <label className="auth-field admin-wide-field">Image URL (optional)<input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} maxLength={2000} placeholder="Paste an image link, or upload below" /></label>
-                <label className="auth-field admin-wide-field">Or upload your own image (JPG, PNG, WEBP, GIF · max 5 MB)<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => setImageFile(event.target.files?.[0] || null)} /></label>
-                {imageFile && <p className="admin-image-selection admin-wide-field">Selected: {imageFile.name}</p>}
-                <label className="auth-field">Sunlight<input value={sunlight} onChange={(e) => setSunlight(e.target.value)} maxLength={100} /></label>
-                <button className="primary-button admin-form-submit" type="submit" disabled={saving}>{saving ? 'Saving…' : 'Add plant'}</button>
-              </form>
-            </section>
-
-            <section className="admin-section">
-              <h2>Plant inventory</h2>
+              <div className="admin-section-heading">
+                <h2>Plant inventory</h2>
+                <button
+                  className="primary-button admin-add-plant-toggle"
+                  type="button"
+                  aria-expanded={showAddPlantForm}
+                  onClick={() => setShowAddPlantForm((visible) => !visible)}
+                >
+                  {showAddPlantForm ? 'Cancel' : '+ Add new plant'}
+                </button>
+              </div>
+              {showAddPlantForm && (
+                <form className="admin-plant-form" onSubmit={createPlant}>
+                  <label className="auth-field">Plant name<input value={name} onChange={(e) => setName(e.target.value)} minLength={2} maxLength={100} required /></label>
+                  <label className="auth-field">Category<input value={category} onChange={(e) => setCategory(e.target.value)} minLength={2} maxLength={60} required /></label>
+                  <label className="auth-field">Price (LKR)<input type="number" value={price} onChange={(e) => setPrice(e.target.value)} min="0" step="0.01" required /></label>
+                  <label className="auth-field">Initial stock<input type="number" value={stock} onChange={(e) => setStock(e.target.value)} min="0" max="1000000" step="1" required /></label>
+                  <label className="auth-field admin-wide-field">Description<textarea value={description} onChange={(e) => setDescription(e.target.value)} minLength={5} maxLength={2000} rows={3} required /></label>
+                  <label className="auth-field admin-wide-field">Image URL (optional)<input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} maxLength={2000} placeholder="Paste an image link, or upload below" /></label>
+                  <label className="auth-field admin-wide-field">Or upload your own image (JPG, PNG, WEBP, GIF · max 5 MB)<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => setImageFile(event.target.files?.[0] || null)} /></label>
+                  {imageFile && <p className="admin-image-selection admin-wide-field">Selected: {imageFile.name}</p>}
+                  <label className="auth-field">Sunlight<input value={sunlight} onChange={(e) => setSunlight(e.target.value)} maxLength={100} /></label>
+                  <button className="primary-button admin-form-submit" type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save new plant'}</button>
+                </form>
+              )}
               <div className="admin-inventory-filters">
                 <label className="auth-field">Search inventory<input type="search" placeholder="Plant name, category, description..." value={inventorySearch} onChange={(event) => setInventorySearch(event.target.value)} /></label>
                 <label className="auth-field">Filter category<select value={inventoryCategory} onChange={(event) => setInventoryCategory(event.target.value)}><option value="">All categories</option>{inventoryCategories.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
