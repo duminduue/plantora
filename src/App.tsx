@@ -1050,6 +1050,7 @@ function CartPage() {
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [customerName, setCustomerName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
   const [orderNumber, setOrderNumber] = useState('')
   const [error, setError] = useState('')
@@ -1085,6 +1086,7 @@ function CartPage() {
         body: JSON.stringify({
           customerName,
           email,
+          phone,
           address,
           items: cart.map((item) => ({
             plantId: item.plant._id,
@@ -1169,6 +1171,9 @@ function CartPage() {
             </label>
             <label className="auth-field">Email address
               <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} maxLength={254} required />
+            </label>
+            <label className="auth-field">Mobile number
+              <input type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} autoComplete="tel" inputMode="tel" minLength={9} maxLength={20} pattern="[+()0-9 -]{9,20}" placeholder="e.g. 077 123 4567" required />
             </label>
             <label className="auth-field">Delivery address
               <textarea value={address} onChange={(event) => setAddress(event.target.value)} minLength={8} maxLength={500} required rows={3} />
