@@ -22,6 +22,7 @@ type Plant = {
   description: string
   imageUrl: string
   sunlight: string
+  stock?: number
 }
 
 
@@ -1054,6 +1055,65 @@ function CartPage() {
   const [address, setAddress] = useState('')
   const [orderNumber, setOrderNumber] = useState('')
   const [error, setError] = useState('')
+  const [stockById, setStockById] = useState<Record<string, number>>({})
+  const [stockLoading, setStockLoading] = useState(false)
+  const [stockCheckError, setStockCheckError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function checkCartStock() {
+      if (cart.length === 0) {
+        setStockById({})
+        setStockCheckError('')
+        setStockLoading(false)
+        return
+      }
+
+      setStockLoading(true)
+      setStockCheckError('')
+      try {
+        const results = await Promise.all(
+          cart.map(async (item) => {
+            const response = await fetch(
+              `${API_URL}/${encodeURIComponent(item.plant._id)}`
+            )
+            const result = await response.json()
+            if (!response.ok || !result.success || !result.data) {
+              throw new Error(result.message || `Could not check stock for ${item.plant.name}.`)
+            }
+            // Existing legacy documents without a stock field use the same
+            // default as checkout, which initializes their stock to 100.
+            return [item.plant._id, Number.isInteger(result.data.stock) ? result.data.stock : 100] as const
+          })
+        )
+
+        if (!cancelled) {
+          setStockById(Object.fromEntries(results))
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setStockCheckError(
+            err instanceof Error
+              ? err.message
+              : 'Unable to check stock right now. Please try again.'
+          )
+        }
+      } finally {
+        if (!cancelled) setStockLoading(false)
+      }
+    }
+
+    checkCartStock()
+    return () => {
+      cancelled = true
+    }
+  }, [cart.map((item) => item.plant._id).join('|')])
+
+  const unavailableItems = cart.filter((item) => {
+    const stock = stockById[item.plant._id]
+    return stock !== undefined && (stock <= 0 || item.quantity > stock)
+  })
 
   function updateCart(nextCart: CartItem[]) {
     setCart(nextCart)
@@ -1136,6 +1196,15 @@ function CartPage() {
                   <div className="cart-item-info">
                     <h2>{item.plant.name}</h2>
                     <p>{formatPrice(item.plant.price)} each</p>
+                    {stockById[item.plant._id] !== undefined && (
+                      <p className={stockById[item.plant._id] < 1 ? 'auth-message auth-error' : 'cart-stock-note'} role={stockById[item.plant._id] < 1 ? 'alert' : undefined}>
+                        {stockById[item.plant._id] < 1
+                          ? 'Out of stock'
+                          : item.quantity > stockById[item.plant._id]
+                            ? `Only ${stockById[item.plant._id]} available`
+                            : `${stockById[item.plant._id]} available`}
+                      </p>
+                    )}
                     <label className="cart-quantity">
                       Quantity
                       <input
@@ -1157,8 +1226,25 @@ function CartPage() {
               <div className="cart-summary-row"><span>Items</span><span>{cart.reduce((sum, item) => sum + item.quantity, 0)}</span></div>
               <div className="cart-summary-row"><span>Subtotal</span><strong>{formatPrice(total)}</strong></div>
               <p className="cart-note">Delivery charges, if applicable, will be confirmed separately.</p>
+              {stockLoading && <p className="cart-stock-note" role="status">Checking plant availability…</p>}
+              {stockCheckError && <p className="auth-message auth-error" role="alert">{stockCheckError}</p>}
+              {unavailableItems.length > 0 && (
+                <p className="auth-message auth-error" role="alert">
+                  Some plants are out of stock or your selected quantity exceeds available stock. Update your cart before checkout.
+                </p>
+              )}
               {error && <p className="auth-message auth-error" role="alert">{error}</p>}
-              <button className="primary-button cart-checkout-button" type="button" onClick={() => setCheckoutOpen(true)}>Proceed to checkout</button>
+              <button
+                className="primary-button cart-checkout-button"
+                type="button"
+                disabled={stockLoading || Boolean(stockCheckError) || unavailableItems.length > 0}
+                onClick={() => {
+                  setError('')
+                  setCheckoutOpen(true)
+                }}
+              >
+                {stockLoading ? 'Checking stock…' : unavailableItems.length > 0 ? 'Stock unavailable' : 'Proceed to checkout'}
+              </button>
             </aside>
           </div>
         )}
