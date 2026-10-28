@@ -278,7 +278,7 @@ describe('PlantorAI API', () => {
   })
 
   it('POST /api/orders should reject invalid checkout details', async () => {
-    const response = await request(app).post('/api/orders').send({
+    const response = await request(app).post('/api/orders').set('Authorization', `Bearer ${orderAuthToken}`).send({
       customerName: 'A',
       email: 'invalid-email',
       phone: '123',
@@ -291,7 +291,7 @@ describe('PlantorAI API', () => {
   })
 
   it('POST /api/orders should reject an empty cart', async () => {
-    const response = await request(app).post('/api/orders').send({
+    const response = await request(app).post('/api/orders').set('Authorization', `Bearer ${orderAuthToken}`).send({
       customerName: 'Empty Cart Customer',
       email: 'empty-cart@example.com',
       phone: '0771234567',
@@ -315,7 +315,7 @@ describe('PlantorAI API', () => {
     const email = `out-of-stock-${Date.now()}@example.com`
     testEmails.push(email)
 
-    const response = await request(app).post('/api/orders').send({
+    const response = await request(app).post('/api/orders').set('Authorization', `Bearer ${orderAuthToken}`).send({
       customerName: 'Stock Test Customer',
       email,
       phone: '0771234567',
@@ -338,11 +338,11 @@ describe('PlantorAI API', () => {
       phone: '0771234567',
       address: '123 Green Street, Colombo',
     }
-    const badId = await request(app).post('/api/orders').send({
+    const badId = await request(app).post('/api/orders').set('Authorization', `Bearer ${orderAuthToken}`).send({
       ...base,
       items: [{ plantId: 'not-an-id', quantity: 1 }],
     })
-    const badQuantity = await request(app).post('/api/orders').send({
+    const badQuantity = await request(app).post('/api/orders').set('Authorization', `Bearer ${orderAuthToken}`).send({
       ...base,
       items: [{ plantId: new mongoose.Types.ObjectId().toString(), quantity: 0 }],
     })
