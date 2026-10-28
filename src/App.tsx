@@ -13,6 +13,7 @@ import {
 import './App.css'
 import RecommendationsPage from './RecommendationsPage'
 import { API_URL } from './config'
+import PlantCareAssistant from './PlantCareAssistant'
 
 type Plant = {
   _id: string
@@ -1987,6 +1988,7 @@ function App() {
         <Route path="/account" element={<ProtectedAccountPage />} />
         <Route path="/admin" element={<AdminDashboardPage />} />
         <Route path="/seller" element={<SellerDashboardPage />} />
+        <Route path="/plant-care" element={<PlantCareAssistant />} />
         <Route path="/cart" element={<CartPage />} />
         <Route
           path="/recommendations"
