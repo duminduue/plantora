@@ -77,7 +77,7 @@ function validatePlant(body, partial = false) {
   return errors
 }
 
-router.post('/upload-image', (req, res, next) => {
+router.post('/upload-image', (req, res, _next) => {
   imageUpload.single('image')(req, res, (error) => {
     if (error) {
       const message = error.code === 'LIMIT_FILE_SIZE'
