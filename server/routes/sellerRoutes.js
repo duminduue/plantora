@@ -93,10 +93,17 @@ router.get('/orders', async (req, res) => {
     const plants = await Plant.find({ seller: req.user.id }).select('_id name').lean()
     const plantIds = plants.map((plant) => plant._id)
     const orders = await Order.find({ 'items.plant': { $in: plantIds } }).sort({ createdAt: -1 }).limit(200).lean()
-    const sellerOrders = orders.map((order) => ({
-      ...order,
-      items: order.items.filter((item) => plantIds.some((id) => id.toString() === item.plant.toString())),
-    }))
+    const sellerOrders = orders.map((order) => {
+      const items = order.items.filter((item) => plantIds.some((id) => id.toString() === item.plant.toString()))
+      return {
+        _id: order._id,
+        orderNumber: order.orderNumber,
+        createdAt: order.createdAt,
+        status: order.status,
+        items,
+        sellerSubtotal: items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0),
+      }
+    })
     res.json({ success: true, count: sellerOrders.length, data: sellerOrders })
   } catch (error) {
     console.error('Seller orders error:', error.message)
