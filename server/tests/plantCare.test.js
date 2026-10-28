@@ -31,6 +31,16 @@ describe('Plant-care AI endpoint', () => {
     expect(response.status).toBe(400)
   })
 
+  it('rejects plant names that exceed the length limit', async () => {
+    const response = await request(app)
+      .post('/api/plant-care/chat')
+      .send({ question: 'How should I care for this plant?', plantName: 'x'.repeat(101) })
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+    expect(response.body.message).toBe('Plant name must be 100 characters or fewer.')
+  })
+
   it('reports missing server API configuration without calling the provider', async () => {
     delete process.env.GEMINI_API_KEY
     const fetchSpy = vi.fn()
@@ -59,6 +69,53 @@ describe('Plant-care AI endpoint', () => {
     const response = await request(app).post('/api/plant-care/chat').send({ question: 'Why are leaves yellow?' })
     expect(response.status).toBe(503)
     expect(response.body.message).toContain('quota')
+  })
+
+  it('handles invalid provider credentials without exposing provider details', async () => {
+    process.env.GEMINI_API_KEY = 'test-key-not-real'
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 401 })
+    const response = await request(app).post('/api/plant-care/chat').send({ question: 'Why are leaves yellow?' })
+
+    expect(response.status).toBe(503)
+    expect(response.body.success).toBe(false)
+    expect(response.body.message).toContain('API key')
+  })
+
+  it('rejects a successful provider response that contains no usable answer', async () => {
+    process.env.GEMINI_API_KEY = 'test-key-not-real'
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ candidates: [{ content: { parts: [{ text: '' }] } }] }),
+    })
+    const response = await request(app).post('/api/plant-care/chat').send({ question: 'How often should I water a fern?' })
+
+    expect(response.status).toBe(502)
+    expect(response.body.success).toBe(false)
+    expect(response.body.message).toContain('no usable answer')
+  })
+
+  it('returns a safe error when the provider network request fails', async () => {
+    process.env.GEMINI_API_KEY = 'test-key-not-real'
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    global.fetch = vi.fn().mockRejectedValue(new Error('simulated network failure'))
+    const response = await request(app).post('/api/plant-care/chat').send({ question: 'How often should I water a fern?' })
+
+    expect(response.status).toBe(502)
+    expect(response.body.success).toBe(false)
+    expect(response.body.message).toContain('connection')
+  })
+
+  it('returns a gateway timeout response when the provider request times out', async () => {
+    process.env.GEMINI_API_KEY = 'test-key-not-real'
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const timeoutError = new Error('simulated timeout')
+    timeoutError.name = 'TimeoutError'
+    global.fetch = vi.fn().mockRejectedValue(timeoutError)
+    const response = await request(app).post('/api/plant-care/chat').send({ question: 'How often should I water a fern?' })
+
+    expect(response.status).toBe(504)
+    expect(response.body.success).toBe(false)
+    expect(response.body.message).toContain('too long')
   })
 
   it('limits repeated requests from the same client', async () => {
