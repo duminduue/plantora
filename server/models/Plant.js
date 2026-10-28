@@ -19,6 +19,16 @@ const plantSchema = new mongoose.Schema(
       required: [true, 'Plant price is required'],
       min: [0, 'Price cannot be negative'],
     },
+    stock: {
+      type: Number,
+      required: true,
+      default: 100,
+      min: [0, 'Stock cannot be negative'],
+      validate: {
+        validator: Number.isInteger,
+        message: 'Stock must be a whole number',
+      },
+    },
     description: {
       type: String,
       required: [true, 'Plant description is required'],
