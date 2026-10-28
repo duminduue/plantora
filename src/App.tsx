@@ -1069,18 +1069,39 @@ function CartPage() {
 
   const total = cart.reduce((sum, item) => sum + item.plant.price * item.quantity, 0)
 
-  function placeOrder(event: React.FormEvent<HTMLFormElement>) {
+  async function placeOrder(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError('')
     if (!cart.length) {
       setError('Your cart is empty.')
       return
     }
-    // V1 demo checkout: no payment gateway or backend order persistence yet.
-    const number = `PA-${Date.now().toString().slice(-8)}`
-    setOrderNumber(number)
-    updateCart([])
-    setCheckoutOpen(false)
+
+    try {
+      const ordersApiUrl = API_URL.replace(/\/api\/plants\/?$/, '/api/orders')
+      const response = await fetch(ordersApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerName,
+          email,
+          address,
+          items: cart.map((item) => ({
+            plantId: item.plant._id,
+            quantity: item.quantity,
+          })),
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Unable to place your order.')
+      }
+      setOrderNumber(result.data.orderNumber)
+      updateCart([])
+      setCheckoutOpen(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to place your order. Please try again.')
+    }
   }
 
   return (
@@ -1093,8 +1114,8 @@ function CartPage() {
           <div className="status-panel">
             <span className="empty-icon">🌿</span>
             <h2>Order request received</h2>
-            <p>Your demo order reference is <strong>{orderNumber}</strong>.</p>
-            <p>No payment was taken. This demo checkout does not yet save orders to the backend.</p>
+            <p>Your order reference is <strong>{orderNumber}</strong>.</p>
+            <p>No online payment was taken. Your order request has been saved.</p>
             <Link className="primary-button" to="/">Continue shopping</Link>
           </div>
         ) : cart.length === 0 ? (
