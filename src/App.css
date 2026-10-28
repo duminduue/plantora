@@ -1835,3 +1835,108 @@ select:focus-visible {
 .cart-add-button {
   margin-bottom: 12px;
 }
+
+/* PLANT CARD ACTIONS: compact desktop-friendly layout */
+.plant-card-content {
+  padding: 17px 18px 10px;
+}
+
+.plant-description {
+  min-height: 0;
+  margin: 9px 0 0;
+  line-height: 1.65;
+}
+
+.plant-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 18px 16px;
+  border-top: 1px solid #edede7;
+}
+
+.plant-card-price {
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.plant-card-price .plant-price {
+  margin-top: 5px;
+}
+
+.plant-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.plant-view-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid #e2e7dd;
+  border-radius: 7px;
+  color: #31583b;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 160ms ease;
+}
+
+.plant-view-button:hover {
+  background: #f2f5ef;
+}
+
+.plant-card-actions .cart-add-button {
+  margin: 0;
+  padding: 10px 12px;
+  min-height: 36px;
+  border-radius: 7px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+@media (max-width: 1050px) {
+  .plant-card-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .plant-card-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 650px) {
+  .plant-card-footer {
+    align-items: center;
+    flex-direction: row;
+    padding: 12px 14px 14px;
+  }
+
+  .plant-card-content {
+    padding: 16px 14px 10px;
+  }
+
+  .plant-card-actions {
+    width: auto;
+    gap: 6px;
+  }
+
+  .plant-view-button {
+    padding: 0 8px;
+    font-size: 10px;
+  }
+
+  .plant-card-actions .cart-add-button {
+    padding: 9px 10px;
+    font-size: 10px;
+  }
+}
