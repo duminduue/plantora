@@ -70,36 +70,13 @@ npm run dev
 
 Open the local URL printed by Vite. The backend defaults to `http://localhost:5000`.
 
-## Testing
+## Documentation and project status
 
-Frontend production build (project root):
+The consolidated project overview, setup guide, architecture summary, phase roadmap, testing evidence, known limitations, and deployment checklist are maintained in one document:
 
-```bash
-npm run build
-```
+**[PlantorAI Master Project Documentation](docs/MASTER-PROJECT-DOCUMENTATION.md)**
 
-Backend automated tests (inside `server`):
-
-```bash
-npm test
-```
-
-The project owner reports that 46 backend tests passed for the current Phase 5 work. Run `npm run build` after pulling the latest UI changes to verify the production frontend build; test results are specific to the environment in which they were run.
-
-## Project roadmap
-
-- **Phase 0 — Project Audit and Planning:** completed
-- **Phase 1 — Core Plant Marketplace:** completed
-- **Phase 2 — Authentication and User Roles:** implemented
-- **Phase 3 — Shopping Cart and Checkout:** implemented; checkout uses a demo flow and does not process real payments
-- **Phase 4 — Seller and Admin Dashboards:** implemented; owner-reported local verification is documented in [Phase 4 completion notes](docs/PHASE-4-COMPLETION.md)
-- **Phase 5 — AI Plant-Care Assistant:** implementation complete; owner reports 46 backend tests passing, successful Gemini responses, error-state checks, and marketplace smoke checks. A fresh production build after the latest UI changes remains recommended. See [Phase 5 completion notes](docs/PHASE-5-COMPLETION.md) and [Phase 5 plan](docs/PHASE-5-PLAN.md)
-- **Phase 6 — Testing and Reliability:** planned
-- **Phase 7 — Deployment and Documentation:** planned
-
-## Phase 5 status
-
-The AI Plant-Care Assistant is implemented at `/plant-care`. It uses `GEMINI_API_KEY` from `server/.env`; never put this key in frontend environment variables or commit it. The endpoint validates input, applies an in-memory usage limit, handles service errors, and returns a limitations disclaimer. The UI includes quick questions and Clear Chat. The owner reports successful real AI responses, manual failure-state checks, 46 backend tests passing, and successful marketplace smoke checks (page load, listings, and plant details). A fresh frontend production build after the latest UI changes remains recommended; see [Phase 5 completion notes](docs/PHASE-5-COMPLETION.md).
+Latest owner-reported verification: 55 backend tests passed, production build successful, 7/7 manual regression workflows passed, and lint reported 0 errors with 2 remaining warnings. See the master document for details and limitations.
 
 ## Security reminders
 
