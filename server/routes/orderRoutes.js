@@ -113,11 +113,12 @@ router.post('/', async (req, res) => {
       status: 'Pending',
     })
     orderCreated = true
+    const completedReservations = [...reservedStock]
     reservedStock.length = 0
 
     try {
       await StockMovement.insertMany(orderItems.map((item) => {
-        const reservation = reservedStock.find((entry) => entry.plantId === item.plant.toString())
+        const reservation = completedReservations.find((entry) => entry.plantId === item.plant.toString())
         const stockAfter = reservation.stockAfter
         return {
           plant: item.plant,
