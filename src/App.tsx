@@ -1305,6 +1305,18 @@ type AdminSummary = {
   recentOrders: AdminOrder[]
 }
 
+type StockMovement = {
+  _id: string
+  plantName: string
+  type: 'Restock' | 'Sale' | 'Adjustment' | 'Plant created'
+  quantityChange: number
+  stockBefore: number
+  stockAfter: number
+  orderNumber?: string
+  note?: string
+  createdAt: string
+}
+
 type AdminOrder = {
   _id: string
   orderNumber: string
@@ -1322,6 +1334,7 @@ function AdminDashboardPage() {
   const [summary, setSummary] = useState<AdminSummary | null>(null)
   const [plants, setPlants] = useState<Plant[]>([])
   const [orders, setOrders] = useState<AdminOrder[]>([])
+  const [stockHistory, setStockHistory] = useState<StockMovement[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -1348,6 +1361,8 @@ function AdminDashboardPage() {
   const [restockAmounts, setRestockAmounts] = useState<Record<string, string>>({})
   const [orderSearch, setOrderSearch] = useState('')
   const [orderStatusFilter, setOrderStatusFilter] = useState('')
+  const [historySearch, setHistorySearch] = useState('')
+  const [historyTypeFilter, setHistoryTypeFilter] = useState('')
 
   const filteredPlants = plants.filter((plant) => {
     const query = inventorySearch.trim().toLowerCase()
@@ -1359,6 +1374,11 @@ function AdminDashboardPage() {
     const query = orderSearch.trim().toLowerCase()
     const matchesQuery = !query || [order.orderNumber, order.customerName, order.email, order.phone].some((value) => value?.toLowerCase().includes(query))
     return matchesQuery && (!orderStatusFilter || order.status === orderStatusFilter)
+  })
+  const filteredStockHistory = stockHistory.filter((entry) => {
+    const query = historySearch.trim().toLowerCase()
+    const matchesQuery = !query || [entry.plantName, entry.orderNumber || '', entry.note || ''].some((value) => value.toLowerCase().includes(query))
+    return matchesQuery && (!historyTypeFilter || entry.type === historyTypeFilter)
   })
 
   const adminApiUrl = API_URL.replace(/\/api\/plants\/?$/, '/api/admin')
@@ -1392,14 +1412,16 @@ function AdminDashboardPage() {
     setLoading(true)
     setError('')
     try {
-      const [dashboardResult, plantsResult, ordersResult] = await Promise.all([
+      const [dashboardResult, plantsResult, ordersResult, historyResult] = await Promise.all([
         adminFetch('/dashboard'),
         adminFetch('/plants'),
         adminFetch('/orders'),
+        adminFetch('/stock-history'),
       ])
       setSummary(dashboardResult.data as AdminSummary)
       setPlants(plantsResult.data as Plant[])
       setOrders(ordersResult.data as AdminOrder[])
+      setStockHistory(historyResult.data as StockMovement[])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load admin dashboard.')
     } finally {
@@ -1452,12 +1474,13 @@ function AdminDashboardPage() {
     setError('')
     setMessage('')
     try {
-      await adminFetch(`/plants/${plant._id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ stock: (plant.stock ?? 100) + amount }),
+      const result = await adminFetch(`/plants/${plant._id}/restock`, {
+        method: 'POST',
+        body: JSON.stringify({ quantity: amount }),
       })
       setRestockAmounts((current) => ({ ...current, [plant._id]: '' }))
-      setMessage(`${plant.name}: added ${amount} to stock. New stock saved to the database.`)
+      const movement = result.data.movement as StockMovement
+      setMessage(`Restock successful! ${plant.name}: ${movement.stockBefore} + ${amount} = ${movement.stockAfter} units. Saved to the database.`)
       await loadDashboard()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to restock plant.')
@@ -1646,6 +1669,32 @@ function AdminDashboardPage() {
                         <td><select aria-label={`Status for ${order.orderNumber}`} value={order.status} onChange={(e) => void updateOrderStatus(order._id, e.target.value as AdminOrder['status'])}>
                           <option>Pending</option><option>Processing</option><option>Completed</option><option>Cancelled</option>
                         </select></td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+
+            <section className="admin-section">
+              <h2>Stock movement history</h2>
+              <p className="section-description">Track restocks, sales, new listings and manual stock changes. Latest 300 records are shown.</p>
+              <div className="admin-inventory-filters">
+                <label className="auth-field">Search history<input type="search" placeholder="Plant name or order number..." value={historySearch} onChange={(event) => setHistorySearch(event.target.value)} /></label>
+                <label className="auth-field">Filter action<select value={historyTypeFilter} onChange={(event) => setHistoryTypeFilter(event.target.value)}><option value="">All actions</option><option>Restock</option><option>Sale</option><option>Adjustment</option><option>Plant created</option></select></label>
+              </div>
+              {filteredStockHistory.length === 0 ? <p>No stock history matches these filters yet.</p> : (
+                <div className="admin-table-wrap">
+                  <table className="admin-table">
+                    <thead><tr><th>Date & time</th><th>Plant</th><th>Action</th><th>Quantity change</th><th>Stock before → after</th><th>Reference</th></tr></thead>
+                    <tbody>{filteredStockHistory.map((entry) => (
+                      <tr key={entry._id}>
+                        <td>{new Date(entry.createdAt).toLocaleString()}</td>
+                        <td><strong>{entry.plantName}</strong></td>
+                        <td>{entry.type}</td>
+                        <td>{entry.quantityChange > 0 ? '+' : ''}{entry.quantityChange}</td>
+                        <td>{entry.stockBefore} → {entry.stockAfter}</td>
+                        <td>{entry.orderNumber || entry.note || '—'}</td>
                       </tr>
                     ))}</tbody>
                   </table>
