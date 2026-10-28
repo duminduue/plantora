@@ -1,4 +1,7 @@
 const express = require('express')
+const multer = require('multer')
+const path = require('path')
+const fs = require('fs')
 const mongoose = require('mongoose')
 const Plant = require('../models/Plant')
 const Order = require('../models/Order')
@@ -7,6 +10,28 @@ const StockMovement = require('../models/StockMovement')
 const { authenticate, authorize } = require('../middleware/auth')
 
 const router = express.Router()
+
+const uploadDirectory = path.join(__dirname, '..', 'uploads')
+fs.mkdirSync(uploadDirectory, { recursive: true })
+const imageStorage = multer.diskStorage({
+  destination: (_req, _file, callback) => callback(null, uploadDirectory),
+  filename: (_req, file, callback) => {
+    const extensionByMime = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif' }
+    const extension = extensionByMime[file.mimetype]
+    callback(null, `plant-${Date.now()}-${require('crypto').randomBytes(6).toString('hex')}${extension || ''}`)
+  },
+})
+const imageUpload = multer({
+  storage: imageStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, callback) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    if (!allowedTypes.includes(file.mimetype)) {
+      return callback(new Error('Choose a JPG, PNG, WEBP or GIF image.'))
+    }
+    callback(null, true)
+  },
+})
 
 router.use(authenticate, authorize('admin'))
 
@@ -48,6 +73,26 @@ function validatePlant(body, partial = false) {
 
   return errors
 }
+
+router.post('/upload-image', (req, res, next) => {
+  imageUpload.single('image')(req, res, (error) => {
+    if (error) {
+      const message = error.code === 'LIMIT_FILE_SIZE'
+        ? 'Image must be 5 MB or smaller.'
+        : error.message || 'Unable to upload image.'
+      return res.status(400).json({ success: false, message })
+    }
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Choose an image to upload.' })
+    }
+    const baseUrl = `${req.protocol}://${req.get('host')}`
+    return res.status(201).json({
+      success: true,
+      message: 'Image uploaded successfully.',
+      data: { imageUrl: `${baseUrl}/uploads/${req.file.filename}` },
+    })
+  })
+})
 
 router.get('/dashboard', async (req, res) => {
   try {
