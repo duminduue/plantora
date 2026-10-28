@@ -15,6 +15,7 @@ PlantorAI is a plant marketplace web application for browsing plants, viewing pl
 - Seller dashboard for managing owned listings, stock, and relevant orders
 - Admin dashboard for catalogue/inventory, orders, user roles and account status, and plant-listing moderation
 - Backend checks for authentication, role permissions, seller ownership, stock availability, and order data scoping
+- AI plant-care assistant MVP at `/plant-care`, backed by `POST /api/plant-care/chat` and Gemini API (requires a server-side `GEMINI_API_KEY`)
 
 ## Tech stack
 
@@ -31,7 +32,7 @@ PlantorAI is a plant marketplace web application for browsing plants, viewing pl
 ### 1. Clone and install frontend dependencies
 
 ```bash
-git clone https://github.com/duminduue/plantora.git
+git clone https://github.com/duminduue/plantorai.git
 cd plantora
 npm install
 ```
@@ -47,7 +48,7 @@ npm install
 
 Copy `.env.example` to `.env` and configure at least:
 - `MONGODB_URI`
-- `JWT_SECRET` (use a strong random value of at least 32 characters)
+- `JWT_SECRET` (use a strong random value of at least 32 characters)\n- `GEMINI_API_KEY` (Google AI Studio key; required for the AI assistant)
 
 Keep `.env` private and never commit real credentials.
 
@@ -92,13 +93,13 @@ The project owner reported that the Phase 4 frontend build succeeded and all 40 
 - **Phase 2 — Authentication and User Roles:** implemented
 - **Phase 3 — Shopping Cart and Checkout:** implemented; checkout uses a demo flow and does not process real payments
 - **Phase 4 — Seller and Admin Dashboards:** implemented; owner-reported local verification is documented in [Phase 4 completion notes](docs/PHASE-4-COMPLETION.md)
-- **Phase 5 — AI Plant-Care Assistant:** planning; see [Phase 5 MVP plan](docs/PHASE-5-PLAN.md)
+- **Phase 5 — AI Plant-Care Assistant:** initial endpoint, chat UI, and automated endpoint tests added; not complete until local build/tests and a real Gemini API request succeed. See [Phase 5 MVP plan](docs/PHASE-5-PLAN.md)
 - **Phase 6 — Testing and Reliability:** planned
 - **Phase 7 — Deployment and Documentation:** planned
 
 ## Phase 5 status
 
-The AI Plant-Care Assistant has **not been implemented yet**. The MVP plan intentionally excludes image diagnosis, voice, conversation history, IoT controls, and custom model training. The AI provider and API access approach must be confirmed before provider-specific code is added.
+The initial AI Plant-Care Assistant implementation is in progress. Open `/plant-care` in the frontend. The backend uses `GEMINI_API_KEY` from `server/.env`; never put this key in frontend environment variables or commit it. The endpoint validates input, limits requests in memory, handles provider errors, and returns a limitations disclaimer. The plan intentionally excludes image diagnosis, voice, conversation history, IoT controls, and custom model training. **Phase 5 is not complete** until the owner runs the local build and tests, then verifies a real API response and failure cases.
 
 ## Security reminders
 
