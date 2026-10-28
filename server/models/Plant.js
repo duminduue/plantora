@@ -3,6 +3,10 @@ const mongoose = require('mongoose')
 
 const plantSchema = new mongoose.Schema(
   {
+    seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
+    isActive: { type: Boolean, default: true, index: true },
+    moderationStatus: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Approved', index: true },
+    moderationNote: { type: String, default: '', trim: true, maxlength: 500 },
     name: {
       type: String,
       required: [true, 'Plant name is required'],
