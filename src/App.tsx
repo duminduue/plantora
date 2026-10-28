@@ -1197,12 +1197,12 @@ function CartPage() {
                     <h2>{item.plant.name}</h2>
                     <p>{formatPrice(item.plant.price)} each</p>
                     {stockById[item.plant._id] !== undefined && (
-                      <p className={stockById[item.plant._id] < 1 ? 'auth-message auth-error' : 'cart-stock-note'} role={stockById[item.plant._id] < 1 ? 'alert' : undefined}>
+                      <p className={stockById[item.plant._id] < 1 || item.quantity > stockById[item.plant._id] ? 'auth-message auth-error' : 'cart-stock-note'} role={stockById[item.plant._id] < 1 || item.quantity > stockById[item.plant._id] ? 'alert' : 'status'}>
                         {stockById[item.plant._id] < 1
                           ? 'Out of stock'
                           : item.quantity > stockById[item.plant._id]
-                            ? `Only ${stockById[item.plant._id]} available`
-                            : `${stockById[item.plant._id]} available`}
+                            ? `Only ${stockById[item.plant._id]} available — reduce quantity`
+                            : `${stockById[item.plant._id]} available in stock`}
                       </p>
                     )}
                     <label className="cart-quantity">
