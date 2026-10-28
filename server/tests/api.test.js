@@ -20,6 +20,7 @@ import serverModule from '../server.js'
 const { app } = serverModule
 const testEmails = []
 const testPlantIds = []
+let orderAuthToken = ''
 
 describe('PlantorAI API', () => {
   beforeAll(async () => {
@@ -33,6 +34,18 @@ describe('PlantorAI API', () => {
         serverSelectionTimeoutMS: 10000,
       })
     }
+    const orderUser = await User.create({
+      name: 'Order API Test User',
+      email: `order-auth-${Date.now()}@example.com`,
+      passwordHash: 'test-hash-not-used-for-login',
+      role: 'customer',
+      isActive: true,
+    })
+    orderAuthToken = jwt.sign(
+      { sub: orderUser._id.toString(), role: 'customer' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h', issuer: 'plantorai-api', audience: 'plantorai-client' }
+    )
   }, 15000)
 
   afterAll(async () => {
@@ -225,7 +238,7 @@ describe('PlantorAI API', () => {
     testPlantIds.push(plant._id)
     const email = `order-test-${Date.now()}@example.com`
     testEmails.push(email)
-    const response = await request(app).post('/api/orders').send({
+    const response = await request(app).post('/api/orders').set('Authorization', `Bearer ${orderAuthToken}`).send({
       customerName: 'Order Test Customer',
       email,
       phone: '0771234567',
