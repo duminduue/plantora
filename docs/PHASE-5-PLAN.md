@@ -1,18 +1,19 @@
 # Phase 5 — AI Plant-Care Assistant
 
-**Status:** Planning / not implemented yet.
+**Status:** Implemented; see [Phase 5 completion notes](PHASE-5-COMPLETION.md) for owner-reported verification and remaining close-out checks.
 
 ## Goal
 Add a small, demonstrable assistant that answers basic plant-care questions using the selected plant's known catalogue details and the user's question.
 
 ## Locked MVP scope
-1. A dedicated Plant Care Assistant page or panel.
-2. A text input for one plant-care question and an optional selected plant from the existing catalogue.
-3. A backend endpoint that validates the request and returns a structured assistant answer.
-4. Server-side AI provider integration only; provider credentials must stay in server environment variables and must never be exposed through `VITE_*` variables or committed to Git.
-5. Basic loading, empty-input, error, and retry states in the UI.
-6. A concise safety note: advice is general care guidance, not a guarantee; users should verify plant-specific needs and keep plants away from children/pets when toxicity is uncertain.
-7. Automated tests for input validation, provider failure handling, and endpoint behavior using a mocked provider (no paid API calls in tests).
+1. Dedicated Plant Care Assistant page at `/plant-care`.
+2. Text input for a plant-care question and an optional plant name.
+3. Backend endpoint `POST /api/plant-care/chat` with request validation and a structured answer.
+4. Server-side Gemini integration using `GEMINI_API_KEY`; secrets are not placed in frontend variables.
+5. Loading, empty-input, and error states, plus readable formatting for headings and lists.
+6. Limitations disclaimer advising users to verify important care, toxicity, disease, and treatment decisions.
+7. Automated tests for input validation, mocked provider behavior, rate limiting, and service failures.
+8. Quick-question buttons for watering, yellow leaves, sunlight, and root rot, plus Clear Chat.
 
 ## Out of scope for the MVP
 - Image-based disease detection.
@@ -47,5 +48,5 @@ Add a small, demonstrable assistant that answers basic plant-care questions usin
 - Frontend build and all backend tests pass.
 - Existing core workflows pass a regression checklist.
 
-## Decision needed before implementation
-Choose the AI provider and confirm that an API key is available. No provider-specific code should be written until this is decided.
+## Close-out checks
+The project owner reports 46 backend tests passing and manually verified successful Gemini responses, empty-question prevention, Quick Questions, Clear Chat, and the user-facing error shown when the backend is unavailable. Run a fresh frontend production build after the latest UI changes and regression-check the existing marketplace workflows before considering all phase checks closed. See [Phase 5 completion notes](PHASE-5-COMPLETION.md).
