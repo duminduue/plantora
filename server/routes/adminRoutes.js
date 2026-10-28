@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const Plant = require('../models/Plant')
 const Order = require('../models/Order')
 const User = require('../models/User')
+const StockMovement = require('../models/StockMovement')
 const { authenticate, authorize } = require('../middleware/auth')
 
 const router = express.Router()
@@ -76,6 +77,51 @@ router.get('/dashboard', async (req, res) => {
   }
 })
 
+router.get('/stock-history', async (req, res) => {
+  try {
+    const history = await StockMovement.find().sort({ createdAt: -1 }).limit(300).lean()
+    return res.json({ success: true, count: history.length, data: history })
+  } catch (error) {
+    console.error('Admin stock history error:', error.message)
+    return res.status(500).json({ success: false, message: 'Unable to load stock history' })
+  }
+})
+
+router.post('/plants/:id/restock', async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid plant ID' })
+    }
+    const { quantity } = req.body || {}
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 1000000) {
+      return res.status(400).json({ success: false, message: 'Restock quantity must be a whole number between 1 and 1000000' })
+    }
+
+    const plant = await Plant.findById(req.params.id)
+    if (!plant) return res.status(404).json({ success: false, message: 'Plant not found' })
+    const stockBefore = plant.stock ?? 100
+    if (stockBefore + quantity > 1000000) {
+      return res.status(400).json({ success: false, message: 'Restock would exceed the maximum stock limit' })
+    }
+
+    plant.stock = stockBefore + quantity
+    await plant.save()
+    const movement = await StockMovement.create({
+      plant: plant._id,
+      plantName: plant.name,
+      type: 'Restock',
+      quantityChange: quantity,
+      stockBefore,
+      stockAfter: plant.stock,
+      note: 'Admin restock',
+    })
+    return res.json({ success: true, message: 'Restock successful', data: { plant, movement } })
+  } catch (error) {
+    console.error('Admin restock error:', error.message)
+    return res.status(500).json({ success: false, message: 'Unable to restock plant' })
+  }
+})
+
 router.get('/plants', async (req, res) => {
   try {
     const plants = await Plant.find().sort({ createdAt: -1 }).lean()
@@ -100,6 +146,15 @@ router.post('/plants', async (req, res) => {
       description: body.description.trim(),
       imageUrl: typeof body.imageUrl === 'string' ? body.imageUrl.trim() : '',
       sunlight: typeof body.sunlight === 'string' && body.sunlight.trim() ? body.sunlight.trim() : 'Not specified',
+    })
+    await StockMovement.create({
+      plant: plant._id,
+      plantName: plant.name,
+      type: 'Plant created',
+      quantityChange: plant.stock,
+      stockBefore: 0,
+      stockAfter: plant.stock,
+      note: 'Initial inventory',
     })
     return res.status(201).json({ success: true, message: 'Plant created', data: plant })
   } catch (error) {
@@ -128,8 +183,21 @@ router.patch('/plants/:id', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Provide at least one supported plant field' })
     }
 
+    const previousPlant = await Plant.findById(req.params.id)
+    if (!previousPlant) return res.status(404).json({ success: false, message: 'Plant not found' })
+    const stockBefore = previousPlant.stock ?? 100
     const plant = await Plant.findByIdAndUpdate(req.params.id, { $set: updates }, { new: true, runValidators: true })
-    if (!plant) return res.status(404).json({ success: false, message: 'Plant not found' })
+    if (updates.stock !== undefined && updates.stock !== stockBefore) {
+      await StockMovement.create({
+        plant: plant._id,
+        plantName: plant.name,
+        type: 'Adjustment',
+        quantityChange: plant.stock - stockBefore,
+        stockBefore,
+        stockAfter: plant.stock,
+        note: 'Manual stock adjustment',
+      })
+    }
     return res.json({ success: true, message: 'Plant updated', data: plant })
   } catch (error) {
     console.error('Admin update plant error:', error.message)
