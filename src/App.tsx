@@ -1443,21 +1443,6 @@ function AdminDashboardPage() {
     }
   }
 
-  async function updatePlantStock(plant: Plant, nextStock: number) {
-    setError('')
-    setMessage('')
-    try {
-      await adminFetch(`/plants/${plant._id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ stock: nextStock }),
-      })
-      setMessage(`${plant.name} stock updated and saved to the database.`)
-      await loadDashboard()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to update stock.')
-    }
-  }
-
   async function restockPlant(plant: Plant) {
     const amount = Number(restockAmounts[plant._id] || 0)
     if (!Number.isInteger(amount) || amount < 1) {
