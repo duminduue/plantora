@@ -1,6 +1,6 @@
 // src/App.tsx
 
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import {
   BrowserRouter,
   Link,
@@ -1563,8 +1563,8 @@ function AdminDashboardPage() {
                   <table className="admin-table">
                     <thead><tr><th>Plant</th><th>Price</th><th>Available stock</th><th>Actions</th></tr></thead>
                     <tbody>{plants.map((plant) => (
-                      <>
-                        <tr key={plant._id}>
+                      <Fragment key={plant._id}>
+                        <tr>
                           <td><strong>{plant.name}</strong><small>{plant.category}</small></td>
                           <td>{formatPrice(plant.price)}</td>
                           <td><input aria-label={`${plant.name} stock`} className="admin-stock-input" type="number" min="0" max="1000000" defaultValue={plant.stock ?? 100} id={`stock-${plant._id}`} /></td>
@@ -1600,7 +1600,7 @@ function AdminDashboardPage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </Fragment>
                     ))}</tbody>
                   </table>
                 </div>
