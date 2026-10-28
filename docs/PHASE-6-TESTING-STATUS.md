@@ -19,7 +19,7 @@ The following results were reported by the project owner from the local checkout
 
 The existing tests cover plant listing and filters, invalid and nonexistent plant IDs, empty search results, order validation and creation, stock availability, authentication and JWT validation, customer/admin authorization, seller ownership isolation, seller order privacy, admin user management, and stock movement records.
 
-An additional checkout consistency test verifies that an order exceeding available stock is rejected and leaves the plant stock unchanged, with no order or sale stock-movement record created. The project owner reports that the updated suite passes with 52 tests.
+Checkout tests also verify that an order exceeding available stock is rejected without changing stock or creating order/sale-history records, duplicate cart lines for the same plant are combined for quantity and subtotal calculations, and a nonexistent plant ID is rejected without creating an order. The latest additions also test that admin restock rejects zero, negative, fractional, and string quantities without changing stock or writing a restock history record. These newly added tests are committed, but they still require a fresh local test run before their results can be recorded.
 
 ### `server/tests/plantCare.test.js`
 
@@ -44,6 +44,7 @@ The root `package.json` has no `test` script, so running `npm test` at the proje
 
 ## Remaining Phase 6 work
 
+- Newly added checkout duplicate-line, missing-plant, and admin restock validation tests need to be run locally; update the verified count only after the suite passes.
 - Review remaining coverage gaps and add targeted tests only where needed.
 - Review seller/admin restrictions and order/stock consistency for uncovered cases.
 - Fix lint warnings only when safe and useful; rerun lint and tests after changes.
