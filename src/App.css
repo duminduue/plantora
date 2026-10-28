@@ -2165,3 +2165,33 @@ select:focus-visible {
     gap: 10px;
   }
 }
+
+
+/* Admin inventory add-plant action */
+.admin-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.admin-section-heading h2 {
+  margin: 0;
+}
+.admin-add-plant-toggle {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 10px 18px;
+}
+.admin-section-heading + .admin-plant-form {
+  margin-bottom: 24px;
+}
+@media (max-width: 560px) {
+  .admin-section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .admin-add-plant-toggle {
+    width: 100%;
+  }
+}
