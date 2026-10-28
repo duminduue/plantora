@@ -22,3 +22,64 @@
 .plant-care-disclaimer { margin-top: 20px; color: var(--muted, #64748b); font-size: .9rem; line-height: 1.6; }
 .plant-care-nav { display: flex; gap: 18px; align-items: center; }
 @media (max-width: 600px) { .plant-care-page { padding-top: 28px; } .plant-care-message { max-width: 100%; } .plant-care-nav { gap: 10px; font-size: .9rem; } }
+
+
+/* Plant-care answer formatting */
+.plant-care-answer {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.75;
+}
+
+.plant-care-answer p {
+  margin: 0 0 12px;
+  white-space: pre-wrap;
+}
+
+.plant-care-answer h3 {
+  margin: 18px 0 10px;
+  font-size: 1.08em;
+  line-height: 1.4;
+}
+
+.plant-care-answer strong {
+  font-weight: 700;
+}
+
+.plant-care-answer .answer-spacer {
+  height: 8px;
+}
+
+.plant-care-answer .answer-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 7px 0;
+}
+
+.plant-care-answer .answer-list-number {
+  flex: 0 0 auto;
+  font-weight: 600;
+}
+
+.plant-care-message {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.plant-care-message p:last-child {
+  margin-bottom: 0;
+}
+
+.plant-care-chat {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+
+.plant-care-form-footer .primary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(40%);
+}
