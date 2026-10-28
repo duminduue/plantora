@@ -1345,6 +1345,8 @@ function AdminDashboardPage() {
   const [stock, setStock] = useState('10')
   const [description, setDescription] = useState('')
   const [imageUrl, setImageUrl] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [editImageFile, setEditImageFile] = useState<File | null>(null)
   const [sunlight, setSunlight] = useState('Indirect light')
   const [editingPlantId, setEditingPlantId] = useState('')
   const [editDraft, setEditDraft] = useState({
@@ -1433,12 +1435,29 @@ function AdminDashboardPage() {
     void loadDashboard()
   }, [])
 
+  async function uploadPlantImage(file: File): Promise<string> {
+    const formData = new FormData()
+    formData.append('image', file)
+    const token = localStorage.getItem('plantorai_token')
+    const response = await fetch(`${adminApiUrl}/upload-image`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    })
+    const result = await response.json()
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || 'Unable to upload image.')
+    }
+    return result.data.imageUrl as string
+  }
+
   async function createPlant(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError('')
     setMessage('')
     setSaving(true)
     try {
+      const finalImageUrl = imageFile ? await uploadPlantImage(imageFile) : imageUrl.trim()
       await adminFetch('/plants', {
         method: 'POST',
         body: JSON.stringify({
@@ -1447,7 +1466,7 @@ function AdminDashboardPage() {
           price: Number(price),
           stock: Number(stock),
           description,
-          imageUrl,
+          imageUrl: finalImageUrl,
           sunlight,
         }),
       })
@@ -1456,6 +1475,7 @@ function AdminDashboardPage() {
       setStock('10')
       setDescription('')
       setImageUrl('')
+      setImageFile(null)
       setMessage('Plant added successfully.')
       await loadDashboard()
     } catch (err) {
@@ -1491,6 +1511,7 @@ function AdminDashboardPage() {
     setError('')
     setMessage('')
     setEditingPlantId(plant._id)
+    setEditImageFile(null)
     setEditDraft({
       name: plant.name,
       category: plant.category,
@@ -1507,6 +1528,7 @@ function AdminDashboardPage() {
     setMessage('')
     setSaving(true)
     try {
+      const finalImageUrl = editImageFile ? await uploadPlantImage(editImageFile) : editDraft.imageUrl.trim()
       await adminFetch(`/plants/${plant._id}`, {
         method: 'PATCH',
         body: JSON.stringify({
@@ -1514,7 +1536,7 @@ function AdminDashboardPage() {
           category: editDraft.category.trim(),
           price: Number(editDraft.price),
           description: editDraft.description.trim(),
-          imageUrl: editDraft.imageUrl.trim(),
+          imageUrl: finalImageUrl,
           sunlight: editDraft.sunlight.trim(),
           stock: Number(editDraft.stock),
         }),
@@ -1596,7 +1618,9 @@ function AdminDashboardPage() {
                 <label className="auth-field">Price (LKR)<input type="number" value={price} onChange={(e) => setPrice(e.target.value)} min="0" step="0.01" required /></label>
                 <label className="auth-field">Initial stock<input type="number" value={stock} onChange={(e) => setStock(e.target.value)} min="0" max="1000000" step="1" required /></label>
                 <label className="auth-field admin-wide-field">Description<textarea value={description} onChange={(e) => setDescription(e.target.value)} minLength={5} maxLength={2000} rows={3} required /></label>
-                <label className="auth-field admin-wide-field">Image URL (optional)<input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} maxLength={2000} /></label>
+                <label className="auth-field admin-wide-field">Image URL (optional)<input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} maxLength={2000} placeholder="Paste an image link, or upload below" /></label>
+                <label className="auth-field admin-wide-field">Or upload your own image (JPG, PNG, WEBP, GIF · max 5 MB)<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => setImageFile(event.target.files?.[0] || null)} /></label>
+                {imageFile && <p className="admin-image-selection admin-wide-field">Selected: {imageFile.name}</p>}
                 <label className="auth-field">Sunlight<input value={sunlight} onChange={(e) => setSunlight(e.target.value)} maxLength={100} /></label>
                 <button className="primary-button admin-form-submit" type="submit" disabled={saving}>{saving ? 'Saving…' : 'Add plant'}</button>
               </form>
@@ -1634,7 +1658,9 @@ function AdminDashboardPage() {
                                 <label className="auth-field">Price (LKR)<input type="number" value={editDraft.price} onChange={(event) => setEditDraft({ ...editDraft, price: event.target.value })} min="0" step="0.01" required /></label>
                                 <label className="auth-field">Available stock<input type="number" value={editDraft.stock} onChange={(event) => setEditDraft({ ...editDraft, stock: event.target.value })} min="0" max="1000000" step="1" required /></label>
                                 <label className="auth-field admin-wide-field">Description<textarea value={editDraft.description} onChange={(event) => setEditDraft({ ...editDraft, description: event.target.value })} minLength={5} maxLength={2000} rows={3} required /></label>
-                                <label className="auth-field admin-wide-field">Image URL (optional)<input type="url" value={editDraft.imageUrl} onChange={(event) => setEditDraft({ ...editDraft, imageUrl: event.target.value })} maxLength={2000} /></label>
+                                <label className="auth-field admin-wide-field">Image URL (optional)<input type="url" value={editDraft.imageUrl} onChange={(event) => setEditDraft({ ...editDraft, imageUrl: event.target.value })} maxLength={2000} placeholder="Paste an image link, or upload below" /></label>
+                                <label className="auth-field admin-wide-field">Or upload a replacement image (JPG, PNG, WEBP, GIF · max 5 MB)<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => setEditImageFile(event.target.files?.[0] || null)} /></label>
+                                {editImageFile && <p className="admin-image-selection admin-wide-field">Selected: {editImageFile.name}</p>}
                                 <label className="auth-field">Sunlight<input value={editDraft.sunlight} onChange={(event) => setEditDraft({ ...editDraft, sunlight: event.target.value })} maxLength={100} /></label>
                                 <div className="admin-row-actions admin-wide-field">
                                   <button className="primary-button" type="submit" disabled={saving}>{saving ? 'Saving changes…' : 'Save changes'}</button>
